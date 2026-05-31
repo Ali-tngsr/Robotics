@@ -310,46 +310,63 @@ def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
     return fig
 
 def plot_idr_example2():
-    """Figure 13: Inverse dynamics tracking linear trajectory."""
+    from simulate import simulate_idr_example2
+    from params import L
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
     print("  Running IDR Example 2 simulation...")
     t, theta_d, phi_d, F_req = simulate_idr_example2()
     
-    fig, axes = plt.subplots(2, 1, figsize=(11, 8))
+    fig = plt.figure(figsize=(13, 6))
     
-    # 1. محاسبه مسیر دکارتی (تبدیل به میلی‌متر)
-    x_traj = np.zeros_like(theta_d)
-    z_traj = np.zeros_like(theta_d)
+    # ----------------------------------------------------
+    # Subplot a: 3D Workspace (Desired Linear Path)
+    # ----------------------------------------------------
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+    
+    X = np.zeros_like(theta_d)
+    Y = np.zeros_like(theta_d)
+    Z = np.zeros_like(theta_d)
     
     for i in range(len(theta_d)):
         th = theta_d[i]
         ph = phi_d[i]
         if abs(th) < 1e-6:
-            x_traj[i] = 0.0
-            z_traj[i] = L * 1000.0
+            X[i], Y[i], Z[i] = 0.0, 0.0, L * 1000.0
         else:
-            x_traj[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
-            z_traj[i] = (L / th) * np.sin(th) * 1000.0
+            X[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
+            Y[i] = (L / th) * (1 - np.cos(th)) * np.sin(ph) * 1000.0
+            Z[i] = (L / th) * np.sin(th) * 1000.0
+            
+    ax1.plot(X, Y, Z, 'b-', linewidth=2.5)
+    ax1.set_title("(a) Desired linear path on 2-DOF CDCR's workspace")
+    ax1.set_xlabel("X (mm)")
+    ax1.set_ylabel("Y (mm)")
+    ax1.set_zlabel("Z (mm)")
     
-    axes[0].plot(x_traj, z_traj, 'b-', linewidth=2, label='Desired path')
-    axes[0].set_xlabel('X (mm)', fontsize=11)
-    axes[0].set_ylabel('Z (mm)', fontsize=11)
-    axes[0].set_title('(a) Desired path on 2-DOF CDCR workspace', fontsize=11)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend(fontsize=10)
+    # تنظیم ابعاد کادر برای مسیر خطی
+    ax1.set_xlim([0, 300])
+    ax1.set_ylim([0, 300])
+    ax1.set_zlim([700, 850])
     
-    # 2. رسم نیروهای کنترلی مورد نیاز
-    axes[1].plot(t, F_req[0], 'g-', linewidth=2, label='F₁')
-    axes[1].plot(t, F_req[1], 'm-', linewidth=2, label='F₂')
-    axes[1].set_ylabel('Force (N)', fontsize=11)
-    axes[1].set_xlabel('Time (sec)', fontsize=11)
-    axes[1].set_title('(b) Temporal evolution of actuation forces', fontsize=11)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].legend(fontsize=10)
+    # ----------------------------------------------------
+    # Subplot b: Temporal evolution of actuation forces
+    # ----------------------------------------------------
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.plot(t, F_req[0], 'k-', linewidth=1.5, label='F1')
+    ax2.plot(t, F_req[1], 'b--', linewidth=1.5, label='F2')
+    ax2.plot(t, F_req[2], 'r-.', linewidth=1.5, label='F3')
     
-    plt.suptitle('Figure 13: IDR Example 2 (Linear: θ=(π/4)t, φ=π/6)', 
-                 fontsize=13, fontweight='bold')
+    ax2.set_title("(b) Temporal evolution of the actuation forces")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Tension (N)")
+    ax2.grid(True)
+    ax2.legend()
+    
     plt.tight_layout()
     return fig
+  
 def plot_pid_control():
     """Figure 14: PID control response."""
     print("  Running PID control simulation...")
