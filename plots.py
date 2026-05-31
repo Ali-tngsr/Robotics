@@ -163,51 +163,34 @@ def plot_fdr_example2():
     print("  Running FDR Example 2 simulation...")
     t, y = simulate_fdr_example2(t_final=10)
     
-    theta = y[0]
-    phi = y[1]
+    # Extract end-effector position from final state
+    theta_final = y[0, -1]
+    phi_final = y[1, -1]
     
-    # Calculate forces over time (matching simulate_fdr_example2)
-    F1_input = 3.5 * t
-    F2_input = 1.5 * t
-    
-    # Calculate Cartesian coordinates of the end-effector (X, Y, Z)
-    x_cart = np.zeros_like(theta)
-    y_cart = np.zeros_like(theta)
-    z_cart = np.zeros_like(theta)
-    
-    for i in range(len(theta)):
-        th = theta[i]
-        ph = phi[i]
-        # Prevent Singularity at theta -> 0
-        if abs(th) < 1e-6:
-            x_cart[i] = 0.0
-            y_cart[i] = 0.0
-            z_cart[i] = L
-        else:
-            x_cart[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph)
-            y_cart[i] = (L / th) * (1 - np.cos(th)) * np.sin(ph)
-            z_cart[i] = (L / th) * np.sin(th)
+    theta_deg = y[0] * 180 / np.pi
+    phi_deg = y[1] * 180 / np.pi
     
     fig, axes = plt.subplots(2, 1, figsize=(11, 8))
     
-    # Forces input (Fig. 10a)
-    axes[0].plot(t, F1_input, 'g-', linewidth=2, label='F₁')
-    axes[0].plot(t, F2_input, 'm-', linewidth=2, label='F₂')
+    # Forces input
+    F1_input = 3.5 * t
+    axes[0].plot(t, F1_input, 'r-', linewidth=2, label='F₁')
+    axes[0].axhline(0, color='b', linestyle='--', linewidth=1.5, label='F₂=0')
     axes[0].set_ylabel('Cable Force (N)', fontsize=11)
     axes[0].set_xlabel('Time (sec)', fontsize=11)
     axes[0].legend(fontsize=10)
     axes[0].grid(True, alpha=0.3)
     axes[0].set_title('(a) Temporal evolution of cable tensions', fontsize=11)
     
-    # Cartesian coordinates (Fig. 10b)
-    axes[1].plot(t, x_cart * 1000, 'b-', linewidth=2, label='X')
-    axes[1].plot(t, y_cart * 1000, 'r-', linewidth=2, label='Y')
-    axes[1].plot(t, z_cart * 1000, 'k-', linewidth=2, label='Z')
-    axes[1].set_ylabel('Coordinates (mm)', fontsize=11)
+    # Angles
+    axes[1].plot(t, theta_deg, 'b-', linewidth=2, label='θ')
+    ax1_twin = axes[1].twinx()
+    ax1_twin.plot(t, phi_deg, 'r-', linewidth=2, label='φ')
+    axes[1].set_ylabel('θ (degrees)', fontsize=11, color='b')
+    ax1_twin.set_ylabel('φ (degrees)', fontsize=11, color='r')
     axes[1].set_xlabel('Time (sec)', fontsize=11)
-    axes[1].legend(fontsize=10)
     axes[1].grid(True, alpha=0.3)
-    axes[1].set_title('(b) Cartesian coordinates of the end-point', fontsize=11)
+    axes[1].set_title('(b) Bending and orientation angles', fontsize=11)
     
     plt.suptitle('Figure 10: FDR Example 2 (Varying Forces)', 
                  fontsize=13, fontweight='bold')
