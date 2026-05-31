@@ -368,38 +368,38 @@ def plot_idr_example2():
     return fig
   
 def plot_pid_control():
-    """Figure 14: PID control response."""
-    print("  Running PID control simulation...")
-    t, hist, f_hist = simulate_pid_control(setpoint=15.53, t_final=5.0)
+    from simulate import simulate_pid_control
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    print("  Running PID Control simulation...")
+    t, state, force_history = simulate_pid_control()
     
-    theta_deg = hist[0] * 180 / np.pi
-    phi_deg = hist[1] * 180 / np.pi
-    F1 = f_hist[0]
+    # تبدیل رادیان به درجه برای نمایش در نمودار
+    theta_deg = state[0, :] * 180.0 / np.pi
     
-    fig, axes = plt.subplots(3, 1, figsize=(11, 9), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
     
-    # Theta
-    axes[0].plot(t, theta_deg, 'b-', linewidth=2)
-    axes[0].axhline(15.53, color='g', linestyle='-', linewidth=1.5, alpha=0.7, label='Target: 15.53°')
-    axes[0].set_ylabel('θ (degrees)', fontsize=11)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend(fontsize=10)
-    axes[0].set_ylim(0, 30)
+    # Subplot 1: Bending angle tracking
+    ax1.plot(t, theta_deg, 'b-', linewidth=2, label='Actual θ')
+    ax1.axhline(y=15.53, color='r', linestyle='--', label='Desired (15.53°)')
+    ax1.set_title('(a) Bending angle θ tracking response', fontsize=11)
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('Angle (degrees)')
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
     
-    # Phi
-    axes[1].plot(t, phi_deg, 'r-', linewidth=2)
-    axes[1].set_ylabel('φ (degrees)', fontsize=11)
-    axes[1].grid(True, alpha=0.3)
+    # Subplot 2: Cable tensions
+    ax2.plot(t, force_history[0, :], 'k-', linewidth=1.5, label='F1')
+    ax2.plot(t, force_history[1, :], 'b--', linewidth=1.5, label='F2')
+    ax2.plot(t, force_history[2, :], 'r-.', linewidth=1.5, label='F3')
+    ax2.set_title('(b) Temporal evolution of actuation forces', fontsize=11)
+    ax2.set_xlabel('Time (s)')
+    ax2.set_ylabel('Tension (N)')
+    ax2.grid(True, alpha=0.3)
+    ax2.legend()
     
-    # Force
-    axes[2].plot(t, F1, 'k-', linewidth=2)
-    axes[2].set_ylabel('F₁ (N)', fontsize=11)
-    axes[2].set_xlabel('Time (sec)', fontsize=11)
-    axes[2].grid(True, alpha=0.3)
-    axes[2].set_ylim(0, 10)
-    
-    plt.suptitle('Figure 14: Dynamic Response with PID Controller (Kp=2.8, Ki=0.004, Kd=0.38)',
-                 fontsize=13, fontweight='bold')
+    plt.suptitle('Figure 14: Closed-loop PID Control Response', fontweight='bold', fontsize=13)
     plt.tight_layout()
     return fig
 
