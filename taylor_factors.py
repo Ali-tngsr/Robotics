@@ -13,7 +13,7 @@ import numpy as np
 # SAFE SWITCHING BETWEEN EXACT AND TAYLOR
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _safe_eval(exact_func, taylor_func, theta, threshold=1e-6):
+def _safe_eval(exact_func, taylor_func, theta, threshold=1e-3):
     """
     Evaluate function, switching to Taylor near singularity.
     
@@ -285,30 +285,60 @@ def H8(theta, N=10):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ANALYTICAL DERIVATIVES FOR H1 AND H2 (As requested in Phase 2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _dH1_exact(theta):
+    """Analytical derivative of H1 exact form."""
+    t = np.asarray(theta, dtype=float)
+    num = -2*t**3 - 24*t - 6*t**2 * np.sin(t) - 36*t * np.cos(t) + 60*np.sin(t)
+    return num / t**6
+
+def _dH1_taylor(theta):
+    """Analytical derivative of H1 Taylor form (dH1/dθ = θ³/2160 - θ/84)."""
+    t = np.asarray(theta, dtype=float)
+    return t**3 / 2160 - t / 84
+
+def dH1(theta):
+    """Safe evaluation for dH1/dθ"""
+    return _safe_eval(_dH1_exact, _dH1_taylor, theta)
+
+
+def _dH2_exact(theta):
+    """Analytical derivative of H2 exact form."""
+    t = np.asarray(theta, dtype=float)
+    num = -12*t - 8*t*np.cos(t) + 2*t*np.cos(2*t) + 24*np.sin(t) - 3*np.sin(2*t)
+    return num / t**4
+
+def _dH2_taylor(theta):
+    """Analytical derivative of H2 Taylor form (dH2/dθ = -2θ³/21 + 2θ/5)."""
+    t = np.asarray(theta, dtype=float)
+    return -2*t**3 / 21 + 2*t / 5
+
+def dH2(theta):
+    """Safe evaluation for dH2/dθ"""
+    return _safe_eval(_dH2_exact, _dH2_taylor, theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PARTIAL DERIVATIVES dH/dθ (used in Coriolis matrix C)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def dH_dtheta(H_func, theta, eps=1e-5):
-    """Central-difference numerical derivative of any H function."""
+def dH_dtheta(H_func, theta, eps=1e-6):
+    """Central-difference numerical derivative for H3-H8."""
+    # Changed eps to 1e-6 as requested in the MD file (Finite difference, ∆θ=1e-6)
     return (H_func(theta + eps) - H_func(theta - eps)) / (2 * eps)
 
-
 # Convenience wrappers for all eight
-def get_all_H(theta):
-    """Return [H1, H2, ..., H8] as array."""
-    return np.array([H1(theta), H2(theta), H3(theta), H4(theta),
-                     H5(theta), H6(theta), H7(theta), H8(theta)])
-
-
 def get_all_dH(theta):
     """Return [dH1/dθ, dH2/dθ, ..., dH8/dθ] as array."""
     return np.array([
-        dH_dtheta(H1, theta),
-        dH_dtheta(H2, theta),
-        dH_dtheta(H3, theta),
-        dH_dtheta(H4, theta),
-        dH_dtheta(H5, theta),
-        dH_dtheta(H6, theta),
-        dH_dtheta(H7, theta),
-        dH_dtheta(H8, theta)
+        dH1(theta),                 # Analytical (Taylor/Exact safe)
+        dH2(theta),                 # Analytical (Taylor/Exact safe)
+        dH_dtheta(H3, theta),       # Numerical
+        dH_dtheta(H4, theta),       # Numerical
+        dH_dtheta(H5, theta),       # Numerical
+        dH_dtheta(H6, theta),       # Numerical
+        dH_dtheta(H7, theta),       # Numerical
+        dH_dtheta(H8, theta)        # Numerical
     ])
