@@ -222,3 +222,38 @@ def lagrangian(theta, theta_dot, phi_dot):
     T = total_kinetic_energy(theta, theta_dot, phi_dot)
     U = total_potential_energy(theta)
     return T - U
+def inverse_dynamics_3cables(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot):
+    M = mass_matrix(theta)
+    C = coriolis_matrix(theta)
+    K = stiffness_matrix()
+    B = damping_matrix()
+    
+    q = np.array([theta, phi])
+    q_dot = np.array([theta_dot, phi_dot])
+    q_ddot = np.array([theta_ddot, phi_ddot])
+    vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
+    
+    # سمت راست معادله (تولید گشتاور مورد نیاز)
+    rhs = M @ q_ddot + C @ vel + K @ q + B @ q_dot  
+    
+    # تشکیل ماتریس D برای 3 کابل (ابعاد 2x3)
+    from params import r_cab
+    gam1, gam2, gam3 = 0.0, 2*np.pi/3, 4*np.pi/3
+    
+    D3 = np.array([
+        [r_cab * np.cos(gam1 - phi), r_cab * np.cos(gam2 - phi), r_cab * np.cos(gam3 - phi)],
+        [r_cab * theta * np.sin(gam1 - phi), r_cab * theta * np.sin(gam2 - phi), r_cab * theta * np.sin(gam3 - phi)]
+    ])
+    
+    # حل معادله برای یافتن نیروها با استفاده از شبه‌معکوس (Pseudo-inverse)
+    F_base = np.linalg.pinv(D3) @ rhs
+    
+    # تضمین اینکه نیروها همیشه کششی هستند (F >= 0)
+    # با افزودن کشش پایه (Pre-tension) در فضای پوچ ماتریس
+    min_F = np.min(F_base)
+    if min_F < 0:
+        F = F_base - min_F + 0.1  # اضافه کردن 0.1 نیوتن به عنوان حداقل کشش
+    else:
+        F = F_base
+        
+    return F
