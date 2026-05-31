@@ -326,10 +326,14 @@ def dH2(theta):
 
 def dH_dtheta(H_func, theta, eps=1e-6):
     """Central-difference numerical derivative for H3-H8."""
-    # Changed eps to 1e-6 as requested in the MD file (Finite difference, ∆θ=1e-6)
     return (H_func(theta + eps) - H_func(theta - eps)) / (2 * eps)
 
 # Convenience wrappers for all eight
+def get_all_H(theta):
+    """Return [H1, H2, ..., H8] as array."""
+    return np.array([H1(theta), H2(theta), H3(theta), H4(theta),
+                     H5(theta), H6(theta), H7(theta), H8(theta)])
+
 def get_all_dH(theta):
     """Return [dH1/dθ, dH2/dθ, ..., dH8/dθ] as array."""
     return np.array([
