@@ -199,39 +199,62 @@ def plot_fdr_example2():
 
 
 def plot_idr_example1():
-    """Figure 12: Inverse dynamics tracking circular trajectory."""
+    from simulate import simulate_idr_example1
+    from params import L
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
     print("  Running IDR Example 1 simulation...")
     t, theta_d, phi_d, F_req = simulate_idr_example1()
     
-    theta_deg = theta_d * 180 / np.pi
-    phi_deg = phi_d * 180 / np.pi
+    fig = plt.figure(figsize=(13, 6))
     
-    fig, axes = plt.subplots(2, 1, figsize=(11, 8))
+    # ----------------------------------------------------
+    # Subplot a: 3D Workspace (Desired Path)
+    # ----------------------------------------------------
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
     
-    # Desired path
-    # Create 2D projection: X-Z plane
-    x_traj = (L/theta_d[0]) * (1 - np.cos(theta_d)) * np.cos(phi_d)
-    z_traj = (L/theta_d[0]) * np.sin(theta_d)
+    X = np.zeros_like(theta_d)
+    Y = np.zeros_like(theta_d)
+    Z = np.zeros_like(theta_d)
     
-    axes[0].plot(x_traj * 1000, z_traj * 1000, 'r-', linewidth=2, label='Desired path')
-    axes[0].set_xlabel('X (mm)', fontsize=11)
-    axes[0].set_ylabel('Z (mm)', fontsize=11)
-    axes[0].set_title('(a) Desired path on 2-DOF CDCR workspace', fontsize=11)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend(fontsize=10)
-    axes[0].axis('equal')
+    # محاسبه مختصات فضایی (X, Y, Z) نوک ربات در میلی‌متر
+    for i in range(len(theta_d)):
+        th = theta_d[i]
+        ph = phi_d[i]
+        if abs(th) < 1e-6:
+            X[i], Y[i], Z[i] = 0.0, 0.0, L * 1000.0
+        else:
+            X[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
+            Y[i] = (L / th) * (1 - np.cos(th)) * np.sin(ph) * 1000.0
+            Z[i] = (L / th) * np.sin(th) * 1000.0
+            
+    ax1.plot(X, Y, Z, 'b-', linewidth=2.5)
+    ax1.set_title("(a) Desired path plotted on 2-DOF CDCR's workspace")
+    ax1.set_xlabel("X (mm)")
+    ax1.set_ylabel("Y (mm)")
+    ax1.set_zlabel("Z (mm)")
     
-    # Required forces
-    axes[1].plot(t, F_req[0], 'g-', linewidth=2, label='F₁')
-    axes[1].plot(t, F_req[1], 'm-', linewidth=2, label='F₂')
-    axes[1].set_ylabel('Force (N)', fontsize=11)
-    axes[1].set_xlabel('Time (sec)', fontsize=11)
-    axes[1].set_title('(b) Temporal evolution of actuation forces', fontsize=11)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].legend(fontsize=10)
+    # تنظیم ابعاد کادر برای اینکه دایره کاملا واضح و متناسب دیده شود
+    ax1.set_xlim([-150, 150])
+    ax1.set_ylim([-150, 150])
+    # Z حدودا روی 793 میلی متر در نوسان است، بنابراین کادر را محدود می‌کنیم:
+    ax1.set_zlim([750, 800]) 
     
-    plt.suptitle('Figure 12: IDR Example 1 (Circular: θ=π/12, φ=(π/5)t)', 
-                 fontsize=13, fontweight='bold')
+    # ----------------------------------------------------
+    # Subplot b: Temporal evolution of actuation forces
+    # ----------------------------------------------------
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.plot(t, F_req[0], 'k-', linewidth=1.5, label='F1')
+    ax2.plot(t, F_req[1], 'b--', linewidth=1.5, label='F2')
+    ax2.plot(t, F_req[2], 'r-.', linewidth=1.5, label='F3')
+    
+    ax2.set_title("(b) Temporal evolution of the actuation forces")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Tension (N)")
+    ax2.grid(True)
+    ax2.legend()
+    
     plt.tight_layout()
     return fig
 
