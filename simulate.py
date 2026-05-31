@@ -188,74 +188,47 @@ class SimplePIDController:
         return output
 
 
-def simulate_pid_control(setpoint_deg=15.53, t_final=8.0, dt=0.02):
+def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01):
     """
     PID control to reach bending angle setpoint (Fig. 14).
     Paper parameters: Kp=2.8, Ki=0.004, Kd=0.38
-    Error is calculated in DEGREES to match the paper's tuning gains.
     """
     import numpy as np
     from scipy.integrate import solve_ivp
-    from dynamics import mass_matrix, coriolis_matrix, stiffness_matrix, damping_matrix
-    from params import r_cab
+    from dynamics import state_derivative
     
-    Kp, Ki, Kd = 2.8, 0.004, 0.38
-    integral_error = 0.0
-    prev_error = 0.0
+    setpoint_rad = setpoint * np.pi / 180.0
+    pid = SimplePIDController(Kp=2.8, Ki=0.004, Kd=0.38)
     
-    t_eval = np.arange(0, t_final, dt)
+    t = np.arange(0, t_final, dt)
     state = np.array([1e-8, 0.0, 0.0, 0.0])  # [θ, φ, θ̇, φ̇]
     
-    history = np.zeros((4, len(t_eval)))
-    force_history = np.zeros((3, len(t_eval)))
+    history = np.zeros((4, len(t)))
+    force_history = np.zeros((3, len(t)))  # ذخیره هر سه نیرو
     
-    for i, current_t in enumerate(t_eval):
+    for i, current_t in enumerate(t):
         history[:, i] = state
-        theta = state[0]
         
-        # محاسبه خطا بر حسب درجه (الزامی برای مچ شدن با Kp=2.8)
-        error = setpoint_deg - (theta * 180.0 / np.pi)
+        # محاسبه خطای PID
+        error = setpoint_rad - state[0]
         
-        # آپدیت PID
-        integral_error += error * dt
-        derivative_error = (error - prev_error) / dt if dt > 0 else 0.0
-        output = Kp * error + Ki * integral_error + Kd * derivative_error
-        prev_error = error
+        # فقط کابل 1 کشیده می‌شود
+        F1 = max(0.0, pid.update(error, dt)) 
+        F2 = 0.0
+        F3 = 0.0
         
-        # تولید نیروی کششی کابل 1 (تنش منفی نداریم)
-        F1 = max(0.0, output)
-        F_req = np.array([F1, 0.0, 0.0]) 
+        force_history[:, i] = [F1, F2, F3]
         
-        force_history[:, i] = F_req
+        # تابع نیرو برای ارسال به حلگر
+        def force_func(t_inner):
+            return np.array([F1, F2])
         
-        # تعریف دینامیک لوکال برای پشتیبانی از ماتریس 3 کابله در حلگر ODE
-        def state_derivative_pid(t_inner, y):
-            th, ph, th_dot, ph_dot = y
-            if abs(th) < 1e-8: th = 1e-8
-            
-            M = mass_matrix(th)
-            C = coriolis_matrix(th)
-            K = stiffness_matrix()
-            B = damping_matrix()
-            
-            q = np.array([th, ph])
-            q_dot = np.array([th_dot, ph_dot])
-            vel = np.array([th_dot**2, th_dot*ph_dot, ph_dot**2])
-            
-            # ماتریس D برای 3 کابل
-            gam1, gam2, gam3 = 0.0, 2*np.pi/3, 4*np.pi/3
-            D3 = np.array([
-                [r_cab * np.cos(gam1 - ph), r_cab * np.cos(gam2 - ph), r_cab * np.cos(gam3 - ph)],
-                [r_cab * th * np.sin(gam1 - ph), r_cab * th * np.sin(gam2 - ph), r_cab * th * np.sin(gam3 - ph)]
-            ])
-            
-            rhs = D3 @ F_req - C @ vel - K @ q - B @ q_dot
-            try:
-                q_ddot = np.linalg.solve(M, rhs)
-            except np.linalg.LinAlgError:
-                q_ddot = np.linalg.lstsq(M, rhs, rcond=None)[0]
-                
-            return [th_dot, ph_dot, q_ddot[0], q_ddot[1]]
+        # حل یک گام زمانی
+        sol = solve_ivp(state_derivative, [current_t, current_t + dt],
+                       state, args=(force_func,), method='RK45')
+        state = sol.y[:, -1]
+        
+    return t, history, force_history
         
         # شبیه‌سازی دقیق گسسته (Digital Control Loop Hold)
         if i < len(t_eval) - 1:
