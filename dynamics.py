@@ -123,17 +123,6 @@ def damping_matrix():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def state_derivative(t, state, force_func):
-    """
-    ODE function for scipy.integrate.solve_ivp.
-    
-    state = [θ, φ, θ̇, φ̇]
-    
-    Returns d/dt[θ, φ, θ̇, φ̇] = [θ̇, φ̇, θ̈, φ̈]
-    
-    Equations (from Eq. 20):
-        M·q̈ = D·F - C·v - K·q
-    where v = [θ̇², θ̇φ̇, φ̇²]^T
-    """
     theta, phi, theta_dot, phi_dot = state
     
     # Protect singularity
@@ -148,51 +137,48 @@ def state_derivative(t, state, force_func):
     C = coriolis_matrix(theta)
     K = stiffness_matrix()
     D = force_matrix(theta, phi)
+    B = damping_matrix()  # <--- اضافه شدن ماتریس میرایی
     
     q = np.array([theta, phi])
+    q_dot = np.array([theta_dot, phi_dot])  # <--- تعریف بردار سرعت
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    # Right-hand side: M·q̈ = D·F - C·v - K·q
-    rhs = D @ F - C @ vel - K @ q
+    # Right-hand side: M·q̈ = D·F - C·v - K·q - B·q̇
+    rhs = D @ F - C @ vel - K @ q - B @ q_dot  # <--- اضافه شدن ترم میرایی
     
     # Solve for accelerations (M is always invertible)
     try:
         q_ddot = np.linalg.solve(M, rhs)
     except np.linalg.LinAlgError:
-        # Fallback (should never happen)
         q_ddot = np.linalg.lstsq(M, rhs, rcond=None)[0]
     
     return [theta_dot, phi_dot, q_ddot[0], q_ddot[1]]
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INVERSE DYNAMICS  — solve for F given trajectory
 # ─────────────────────────────────────────────────────────────────────────────
 
 def inverse_dynamics(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot):
-    """
-    Solve Eq. (20) for cable forces [F1, F2] given desired state trajectory.
-    
-    D·F = M·q̈ + C·v + K·q
-    """
     M = mass_matrix(theta)
     C = coriolis_matrix(theta)
     K = stiffness_matrix()
     D = force_matrix(theta, phi)
+    B = damping_matrix()  # <--- اضافه شدن ماتریس میرایی
     
     q = np.array([theta, phi])
+    q_dot = np.array([theta_dot, phi_dot])  # <--- تعریف بردار سرعت
     q_ddot = np.array([theta_ddot, phi_ddot])
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    rhs = M @ q_ddot + C @ vel + K @ q
+    # D·F = M·q̈ + C·v + K·q + B·q̇
+    rhs = M @ q_ddot + C @ vel + K @ q + B @ q_dot  # <--- جمع با ترم میرایی
     
-    # Solve for F (use pinv for robustness)
     if abs(np.linalg.det(D)) < 1e-10:
         F = np.linalg.lstsq(D, rhs, rcond=None)[0]
     else:
         F = np.linalg.solve(D, rhs)
     
-    return F  # [F1, F2]
+    return F
 
 
 # ─────────────────────────────────────────────────────────────────────────────
