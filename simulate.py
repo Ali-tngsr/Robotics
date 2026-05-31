@@ -68,25 +68,26 @@ def simulate_fdr_example1(t_final=40.0, num_points=1000, F1=5.0):
 
 def simulate_fdr_example2(t_final=10.0, num_points=1000):
     """
-    Time-varying cable tensions (Fig. 10a).
-    Returns: t, [θ, φ, θ̇, φ̇], endpoint Cartesian coordinates.
+    Time-varying cable tensions on cable 1 and 2 (Fig. 10a).
     """
     state0 = [1e-8, 0.0, 0.0, 0.0]
     t_span = (0, t_final)
     t_eval = np.linspace(0, t_final, num_points)
     
     def varying_forces(t):
-        """Linearly increasing tension on cable 1"""
-        F1 = 3.5 * t  # ramps from 0 to 35N over 10s
-        F2 = 0.0
+        """
+        Linearly increasing tensions on cable 1 and cable 2
+        as requested for the Example 2 in the paper.
+        """
+        F1 = 3.5 * t   # Ramps from 0 to 35N
+        F2 = 1.5 * t   # Ramps from 0 to 15N (Adding tension to cable 2)
         return np.array([F1, F2])
     
     sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
                     args=(varying_forces,), method='RK45')
     
     return sol.t, sol.y
-
-
+    
 # ─────────────────────────────────────────────────────────────────────────────
 # 4. INVERSE DYNAMICS Example 1 (Fig. 12)
 # ─────────────────────────────────────────────────────────────────────────────
