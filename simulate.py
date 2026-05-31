@@ -66,25 +66,30 @@ def simulate_fdr_example1(t_final=40.0, num_points=1000, F1=5.0):
 # 3. FORWARD DYNAMICS RESPONSE Example 2 (Fig. 10)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def simulate_fdr_example2(t_final=10.0, num_points=1000):
-    """
-    Time-varying cable tensions (Fig. 10a).
-    Returns: t, [θ, φ, θ̇, φ̇], endpoint Cartesian coordinates.
-    """
+def simulate_fdr_example2(t_final=40.0, num_points=1000):
+    from scipy.integrate import solve_ivp
+    import numpy as np
+    from dynamics import state_derivative
+    
     state0 = [1e-8, 0.0, 0.0, 0.0]
     t_span = (0, t_final)
     t_eval = np.linspace(0, t_final, num_points)
     
-    def varying_forces(t):
-        """Linearly increasing tension on cable 1"""
-        F1 = 3.5 * t  # ramps from 0 to 35N over 10s
+    # ورودی درخواستی شما: 5 نیوتن روی کابل 1 از حالت تعادل
+    def force_func(t):
+        F1 = 5.0
         F2 = 0.0
         return np.array([F1, F2])
     
     sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
-                    args=(varying_forces,), method='RK45')
+                    args=(force_func,), method='RK45')
     
-    return sol.t, sol.y
+    # استخراج نیروهای F1, F2 و F3 در طول زمان برای رسم نمودار
+    F1_vals = np.ones_like(sol.t) * 5.0
+    F2_vals = np.zeros_like(sol.t)
+    F3_vals = np.zeros_like(sol.t)
+    
+    return sol.t, sol.y, F1_vals, F2_vals, F3_vals
 
 
 # ─────────────────────────────────────────────────────────────────────────────
