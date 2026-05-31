@@ -98,7 +98,7 @@ def force_matrix(theta, phi, r=None):
     
     D11 =  r * np.cos(gam1 - phi)
     D12 =  r * np.cos(gam2 - phi)
-    D21 = -r * theta * np.sin(gam1 - phi)
+    D21 =  r * theta * np.sin(gam1 - phi)
     D22 =  r * theta * np.sin(gam2 - phi)
     
     return np.array([[D11, D12],
