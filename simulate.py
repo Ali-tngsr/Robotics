@@ -66,7 +66,7 @@ def simulate_fdr_example1(t_final=40.0, num_points=1000, F1=5.0):
 # 3. FORWARD DYNAMICS RESPONSE Example 2 (Fig. 10)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def simulate_fdr_example2(t_final=40.0, num_points=1000):
+def simulate_fdr_example2(t_final=10.0, num_points=1000):
     from scipy.integrate import solve_ivp
     import numpy as np
     from dynamics import state_derivative
@@ -75,17 +75,16 @@ def simulate_fdr_example2(t_final=40.0, num_points=1000):
     t_span = (0, t_final)
     t_eval = np.linspace(0, t_final, num_points)
     
-    # ورودی درخواستی شما: 5 نیوتن روی کابل 1 از حالت تعادل
     def force_func(t):
-        F1 = 5.0
+        F1 = 3.5 * t
         F2 = 0.0
         return np.array([F1, F2])
     
     sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
                     args=(force_func,), method='RK45')
     
-    # استخراج نیروهای F1, F2 و F3 در طول زمان برای رسم نمودار
-    F1_vals = np.ones_like(sol.t) * 5.0
+    # محاسبه مقادیر نیروها در طول زمان برای ارسال به بخش رسم نمودار
+    F1_vals = 3.5 * sol.t
     F2_vals = np.zeros_like(sol.t)
     F3_vals = np.zeros_like(sol.t)
     
