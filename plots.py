@@ -337,43 +337,29 @@ def generate_all_plots(show=True, save=False):
     
     print("Figure 2 (H₁, H₂)...")
     figs['fig2'] = plot_H1_H2_comparison()
-    if save:
-        figs['fig2'].savefig('fig2_H1_H2.png', dpi=150, bbox_inches='tight')
     
     print("Figure 3 (H₃, H₄)...")
     figs['fig3'] = plot_H3_H4_comparison()
-    if save:
-        figs['fig3'].savefig('fig3_H3_H4.png', dpi=150, bbox_inches='tight')
     
     print("Figure 8 (Static Equilibrium)...")
     figs['fig8'] = plot_static_equilibrium()
-    if save:
-        figs['fig8'].savefig('fig8_static_eq.png', dpi=150, bbox_inches='tight')
     
     print("Figure 9 (FDR Example 1)...")
     figs['fig9'] = plot_fdr_example1()
-    if save:
-        figs['fig9'].savefig('fig9_fdr1.png', dpi=150, bbox_inches='tight')
     
     print("Figure 10 (FDR Example 2)...")
-    figs['fig10'] = plot_fdr_example2()
-    if save:
-        figs['fig10'].savefig('fig10_fdr2.png', dpi=150, bbox_inches='tight')
+    # 🔴 تغییر کلیدی برای رفع ارور در این دو خط است:
+    t_fdr2, state_fdr2, f1, f2, f3 = simulate_fdr_example2()
+    figs['fig10'] = plot_fdr_example2(t_fdr2, state_fdr2, f1, f2, f3)
     
     print("Figure 12 (IDR Example 1)...")
     figs['fig12'] = plot_idr_example1()
-    if save:
-        figs['fig12'].savefig('fig12_idr1.png', dpi=150, bbox_inches='tight')
     
     print("Figure 13 (IDR Example 2)...")
     figs['fig13'] = plot_idr_example2()
-    if save:
-        figs['fig13'].savefig('fig13_idr2.png', dpi=150, bbox_inches='tight')
     
     print("Figure 14 (PID Control)...")
     figs['fig14'] = plot_pid_control()
-    if save:
-        figs['fig14'].savefig('fig14_pid.png', dpi=150, bbox_inches='tight')
     
     if show:
         plt.show()
