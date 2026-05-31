@@ -1,185 +1,225 @@
+"""
+PHASE 5: SIMULATIONS
+Five scenarios from Amouri et al. 2020:
+1. Static equilibrium (Fig. 8)
+2. Forward dynamics response Example 1 (Fig. 9)
+3. Forward dynamics response Example 2 (Fig. 10)
+4. Inverse dynamics response Example 1 (Fig. 12)
+5. Inverse dynamics response Example 2 (Fig. 13)
+[Bonus] PID control (Fig. 14)
+"""
 import numpy as np
-from smc_controller import SlidingModeController
-from pid_controller import PIDController
-from dynamics import state_derivative_payload
 from scipy.integrate import solve_ivp
+from dynamics import state_derivative, inverse_dynamics
 
-def run_smc_tracking_with_payload():
-    m_p_true = 0.050    
-    m_p_hat  = 0.030    
-    
-    Lambda = np.array([[20.0, 0.0], [0.0, 20.0]])
-    K_sw   = np.array([[1.5, 0.0], [0.0, 1.5]])
-    phi_bound = np.array([0.5, 0.5]) 
-                       
-    smc = SlidingModeController(Lambda, K_sw, m_p_hat, phi_bound)
-    
-    def closed_loop_ode(t, state):
-        theta_d = np.pi / 12
-        phi_d = (np.pi / 5) * t
-        desired_state = [theta_d, phi_d, 0.0, np.pi / 5, 0.0, 0.0]
-        
-        F, _, _ = smc.compute_control_law(state, desired_state)
-        force_func = lambda t_val: F
-        return state_derivative_payload(t, state, force_func, m_p_true)
 
-    t_span = (0.0, 3.0)
-    t_eval = np.arange(0, 3.0, 0.01)
-    state0 = [np.pi/12, 0.0, 0.0, np.pi/5]
-    
-    sol = solve_ivp(closed_loop_ode, t_span, state0, t_eval=t_eval, method='BDF', rtol=1e-3, atol=1e-3)
-    t = sol.t
-    history = sol.y
-    
-    desired_history = np.zeros((2, len(t)))
-    force_history = np.zeros((2, len(t)))
-    error_history = np.zeros((2, len(t)))
-    
-    for i, current_t in enumerate(t):
-        current_state = history[:, i]
-        theta_d = np.pi / 12
-        phi_d = (np.pi / 5) * current_t
-        desired_state = [theta_d, phi_d, 0.0, np.pi / 5, 0.0, 0.0]
-        desired_history[:, i] = [theta_d, phi_d]
-        
-        F, S, e = smc.compute_control_law(current_state, desired_state)
-        force_history[:, i] = F
-        error_history[:, i] = e
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. STATIC EQUILIBRIUM (Fig. 8)
+# ─────────────────────────────────────────────────────────────────────────────
 
-    return t, history, desired_history, force_history, error_history
-
-def run_pid_tracking_with_payload():
-    m_p_true = 0.050
-    Kp = np.array([[30.0, 0.0], [0.0, 30.0]])
-    Ki = np.array([[5.0, 0.0], [0.0, 5.0]])
-    Kd = np.array([[10.0, 0.0], [0.0, 10.0]])
-    pid = PIDController(Kp, Ki, Kd)
+def simulate_static_equilibrium(t_final=40.0, num_points=1000):
+    """
+    Static equilibrium with no cable actuation.
+    Initial: θ = π/4, φ = 0, θ̇ = 0, φ̇ = 0
     
-    dt = 0.01
-    t = np.arange(0, 3.0, dt)
-    state = np.array([np.pi/12, 0.0, 0.0, np.pi/5])
-    
-    history = np.zeros((4, len(t)))
-    desired_history = np.zeros((2, len(t)))
-    error_history = np.zeros((2, len(t)))
-    
-    for i, current_t in enumerate(t):
-        state[0] = np.clip(state[0], 1e-6, np.pi/2)
-        state[2] = np.clip(state[2], -15.0, 15.0) 
-        state[3] = np.clip(state[3], -15.0, 15.0) 
-        
-        history[:, i] = state
-        
-        theta_d = np.pi / 12
-        phi_d = (np.pi / 5) * current_t
-        desired_state = [theta_d, phi_d, 0.0, np.pi / 5, 0.0, 0.0]
-        desired_history[:, i] = [theta_d, phi_d]
-        
-        F, e = pid.compute_control_law(state, desired_state, dt)
-        error_history[:, i] = e
-        
-        force_func = lambda t_val: F
-        sol = solve_ivp(state_derivative_payload, [current_t, current_t + dt], state, 
-                        args=(force_func, m_p_true), method='RK45')
-        state = sol.y[:, -1]
-        
-    return t, history, desired_history, error_history
-# ---------------------------------------------------------
-# 1. Static Equilibrium Analysis (Fig. 8)
-# ---------------------------------------------------------
-def run_static_equilibrium():
+    System should oscillate and stabilize around θ=0 (gravity negligible).
+    Paper: stabilization ~37.68 sec (Fig. 8).
+    """
     state0 = [np.pi/4, 0.0, 0.0, 0.0]
-    t_span = (0, 40)
-    t_eval = np.linspace(t_span[0], t_span[1], 1000)
-    force_func = lambda t: np.array([0.0, 0.0])
+    t_span = (0, t_final)
+    t_eval = np.linspace(0, t_final, num_points)
     
-    # Passing m_p = 0.0 to the universal physics engine
-    sol = solve_ivp(state_derivative_payload, t_span, state0, t_eval=t_eval, args=(force_func, 0.0), method='RK45')
+    def no_force(t):
+        return np.array([0.0, 0.0])
+    
+    sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
+                    args=(no_force,), method='RK45', dense_output=False)
+    
+    return sol.t, sol.y  # [θ, φ, θ̇, φ̇]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. FORWARD DYNAMICS RESPONSE Example 1 (Fig. 9)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def simulate_fdr_example1(t_final=40.0, num_points=1000, F1=5.0):
+    """
+    5N constant tension on cable 1.
+    Initial: θ → 0⁺, φ = 0, θ̇ = 0, φ̇ = 0
+    
+    Paper: θ → 15.53°, φ stays ~0 (Fig. 9).
+    """
+    state0 = [1e-8, 0.0, 0.0, 0.0]  # Avoid exact zero
+    t_span = (0, t_final)
+    t_eval = np.linspace(0, t_final, num_points)
+    
+    def constant_force1(t):
+        return np.array([F1, 0.0])
+    
+    sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
+                    args=(constant_force1,), method='RK45')
+    
     return sol.t, sol.y
 
-def run_fdr_example_1():
-    state0 = [1e-6, 0.0, 0.0, 0.0]
-    t_span = (0, 40)
-    t_eval = np.linspace(t_span[0], t_span[1], 1000)
-    force_func = lambda t: np.array([5.0, 0.0])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. FORWARD DYNAMICS RESPONSE Example 2 (Fig. 10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def simulate_fdr_example2(t_final=10.0, num_points=1000):
+    """
+    Time-varying cable tensions (Fig. 10a).
+    Returns: t, [θ, φ, θ̇, φ̇], endpoint Cartesian coordinates.
+    """
+    state0 = [1e-8, 0.0, 0.0, 0.0]
+    t_span = (0, t_final)
+    t_eval = np.linspace(0, t_final, num_points)
     
-    # Passing m_p = 0.0 to the universal physics engine
-    sol = solve_ivp(state_derivative_payload, t_span, state0, t_eval=t_eval, args=(force_func, 0.0), method='RK45')
+    def varying_forces(t):
+        """Linearly increasing tension on cable 1"""
+        F1 = 3.5 * t  # ramps from 0 to 35N over 10s
+        F2 = 0.0
+        return np.array([F1, F2])
+    
+    sol = solve_ivp(state_derivative, t_span, state0, t_eval=t_eval,
+                    args=(varying_forces,), method='RK45')
+    
     return sol.t, sol.y
 
-# ---------------------------------------------------------
-# 3. Inverse Dynamic Response - Example 1 (Fig. 12)
-# ---------------------------------------------------------
-def run_idr_example_1():
-    """
-    Tracks a spatial circular trajectory[cite: 598].
-    theta = pi/12, phi = (pi/5)*t
-    """
-    t = np.linspace(0, 10, 500)
-    theta = np.ones_like(t) * (np.pi / 12)
-    phi = (np.pi / 5) * t
-    
-    dtheta = np.zeros_like(t)
-    ddtheta = np.zeros_like(t)
-    
-    dphi = np.ones_like(t) * (np.pi / 5)
-    ddphi = np.zeros_like(t)
-    
-    Q_req = np.zeros((2, len(t)))
-    
-    for i in range(len(t)):
-        M, C, K, D = assemble_matrices(theta[i], phi[i])
-        
-        q_ddot = np.array([ddtheta[i], ddphi[i]])
-        v_vec = np.array([dtheta[i]**2, dphi[i]**2, dtheta[i]*dphi[i]])
-        q = np.array([theta[i], phi[i]])
-        
-        # M*q_ddot + C*v + K*q = Q
-        Q_req[:, i] = M @ q_ddot + C @ v_vec + K @ q
 
-    return t, theta, phi, Q_req
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. INVERSE DYNAMICS Example 1 (Fig. 12)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ---------------------------------------------------------
-# 4. PID Controller (Fig. 14)
-# ---------------------------------------------------------
-def run_pid_control():
+def simulate_idr_example1():
     """
-    Implements a PID controller to reduce oscillations from FDR Example 1.
-    Setpoint is theta = 15.53 degrees. Uses the universal physics engine with 0g payload.
+    Track circular trajectory: θ = π/12, φ = (π/5)·t
+    Paper: Fig. 12
+    
+    Returns: t, θ, φ, [F1, F2] (required cable forces)
     """
-    # PID Parameters from the paper
-    Kp, Ki, Kd = 2.8, 0.004, 0.38
+    t_start, t_end = 0.0, 10.0
+    num_points = 501
+    t = np.linspace(t_start, t_end, num_points)
     
-    setpoint = 15.53 * (np.pi / 180)  # Convert to radians
+    # Desired trajectory
+    theta_d = np.ones_like(t) * (np.pi / 12)
+    phi_d = (np.pi / 5) * t
+    dtheta_d = np.zeros_like(t)
+    ddtheta_d = np.zeros_like(t)
+    dphi_d = np.ones_like(t) * (np.pi / 5)
+    ddphi_d = np.zeros_like(t)
     
-    dt = 0.02
-    t = np.arange(0, 5.0, dt)
-    state = np.array([1e-6, 0.0, 0.0, 0.0])
+    # Compute required forces
+    F1_array = np.zeros(num_points)
+    F2_array = np.zeros(num_points)
+    
+    for i in range(num_points):
+        F = inverse_dynamics(theta_d[i], phi_d[i],
+                            dtheta_d[i], dphi_d[i],
+                            ddtheta_d[i], ddphi_d[i])
+        F1_array[i] = F[0]
+        F2_array[i] = F[1]
+    
+    return t, theta_d, phi_d, np.array([F1_array, F2_array])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. INVERSE DYNAMICS Example 2 (Fig. 13)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def simulate_idr_example2():
+    """
+    Track trajectory: θ = (π/4)·t, φ = π/6
+    Paper: Fig. 13
+    
+    Returns: t, θ, φ, [F1, F2] (required cable forces)
+    """
+    t_start, t_end = 0.0, 10.0
+    num_points = 501
+    t = np.linspace(t_start, t_end, num_points)
+    
+    # Desired trajectory
+    theta_d = (np.pi / 4) * t
+    phi_d = np.ones_like(t) * (np.pi / 6)
+    dtheta_d = np.ones_like(t) * (np.pi / 4)
+    ddtheta_d = np.zeros_like(t)
+    dphi_d = np.zeros_like(t)
+    ddphi_d = np.zeros_like(t)
+    
+    # Compute required forces
+    F1_array = np.zeros(num_points)
+    F2_array = np.zeros(num_points)
+    
+    for i in range(num_points):
+        F = inverse_dynamics(theta_d[i], phi_d[i],
+                            dtheta_d[i], dphi_d[i],
+                            ddtheta_d[i], ddphi_d[i])
+        F1_array[i] = F[0]
+        F2_array[i] = F[1]
+    
+    return t, theta_d, phi_d, np.array([F1_array, F2_array])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BONUS: PID CONTROL (Fig. 14)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class SimplePIDController:
+    """Simple 1-DOF PID for bending angle θ."""
+    
+    def __init__(self, Kp, Ki, Kd):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.integral_error = 0.0
+        self.prev_error = 0.0
+    
+    def update(self, error, dt):
+        """Compute control output for given error and time step."""
+        self.integral_error += error * dt
+        derivative_error = (error - self.prev_error) / dt if dt > 0 else 0.0
+        
+        output = self.Kp * error + self.Ki * self.integral_error + self.Kd * derivative_error
+        self.prev_error = error
+        
+        return output
+
+
+def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.02):
+    """
+    PID control to reach bending angle setpoint (Fig. 14).
+    Paper parameters: Kp=2.8, Ki=0.004, Kd=0.38
+    
+    Returns: t, state history, force history
+    """
+    setpoint_rad = setpoint * np.pi / 180
+    
+    pid = SimplePIDController(Kp=2.8, Ki=0.004, Kd=0.38)
+    
+    t = np.arange(0, t_final, dt)
+    state = np.array([1e-8, 0.0, 0.0, 0.0])  # [θ, φ, θ̇, φ̇]
     
     history = np.zeros((4, len(t)))
-    force_history = np.zeros(len(t))
-    
-    integral_err = 0.0
-    prev_err = setpoint - state[0]
+    force_history = np.zeros((2, len(t)))
     
     for i, current_t in enumerate(t):
         history[:, i] = state
         
-        # Calculate Errors
-        err = setpoint - state[0]
-        integral_err += err * dt
-        derivative_err = (err - prev_err) / dt
+        # PID control for θ
+        error = setpoint_rad - state[0]
+        F1 = max(0.0, pid.update(error, dt))  # Cables pull (F ≥ 0)
+        F2 = 0.0
         
-        # PID Output (Force on cable 1)
-        F1 = max(0, Kp * err + Ki * integral_err + Kd * derivative_err)
-        force_history[i] = F1
+        force_history[:, i] = [F1, F2]
         
-        force_func = lambda t_val: np.array([F1, 0.0])
+        # Integrate one step
+        def force_func(t_inner):
+            return np.array([F1, F2])
         
-        # THE FIX: Route through state_derivative_payload with m_p = 0.0
-        sol = solve_ivp(state_derivative_payload, [current_t, current_t + dt], state, 
-                        args=(force_func, 0.0), method='RK45')
+        sol = solve_ivp(state_derivative, [current_t, current_t + dt],
+                       state, args=(force_func,), method='RK45',
+                       dense_output=False)
         state = sol.y[:, -1]
-        prev_err = err
-        
+    
     return t, history, force_history

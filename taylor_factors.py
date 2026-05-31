@@ -1,107 +1,314 @@
+"""
+PHASE 2: TAYLOR EXPANSION FACTORS
+H1–H8 factors appear in kinetic energy expressions.
+Exact forms + Taylor approximations (4th order in θ).
+
+The paper uses Taylor expansions to avoid singularities and reduce complexity.
+All expressions valid for θ ∈ [-3π/5, 3π/5].
+"""
 import numpy as np
-import sympy as sp
-import matplotlib.pyplot as plt
-
-# 1. Define symbolic variables
-theta_sym = sp.Symbol('theta')
 
 
-# Exact Analytical Expressions (Eq 10, 11, 25-30)
-H1_exact = (theta_sym**3 + 6*theta_sym - 12*sp.sin(theta_sym) + 6*theta_sym*sp.cos(theta_sym)) / (theta_sym**5)
-H2_exact = (6*theta_sym - 8*sp.sin(theta_sym) + sp.sin(2*theta_sym)) / (theta_sym**3)
-H3_exact = 5/8 - 15/(64*theta_sym**2) + (sp.cos(theta_sym)**2)/(2*theta_sym**2) - sp.sin(2*theta_sym)/(8*theta_sym**3) - sp.sin(4*theta_sym)/(256*theta_sym**3)
-H4_exact = 1/2 - (theta_sym * sp.sin(2*theta_sym))/(4*theta_sym**2)
+# ─────────────────────────────────────────────────────────────────────────────
+# SAFE SWITCHING BETWEEN EXACT AND TAYLOR
+# ─────────────────────────────────────────────────────────────────────────────
 
-H5_exact = (1/(40*theta_sym**4)) * (400 - 40*sp.cos(theta_sym/2) - 40*sp.cos(theta_sym/5) - 40*sp.cos(2*theta_sym/5) - 40*sp.cos(3*theta_sym/5) - 40*sp.cos(4*theta_sym/5) - 40*sp.cos(theta_sym/10) - 40*sp.cos(3*theta_sym/10) - 40*sp.cos(7*theta_sym/10) - 40*sp.cos(9*theta_sym/10) + 77*theta_sym**2 - 40*sp.cos(theta_sym) - 40*theta_sym*sp.sin(theta_sym) - 20*theta_sym*sp.sin(theta_sym/2) - 8*theta_sym*sp.sin(theta_sym/5) - 16*theta_sym*sp.sin(2*theta_sym/5) - 24*theta_sym*sp.sin(3*theta_sym/5) - 32*theta_sym*sp.sin(4*theta_sym/5) - 4*theta_sym*sp.sin(theta_sym/10) - 12*theta_sym*sp.sin(3*theta_sym/10) - 28*theta_sym*sp.sin(7*theta_sym/10) - 36*theta_sym*sp.sin(9*theta_sym/10))
-
-# Note: Typo correction from paper text +c(9\theta/5) formatted as +(9\theta/5)
-H6_exact = (1/(4*theta_sym**2)) * (30 + sp.cos(2*theta_sym) - 4*sp.cos(theta_sym/2) - 3*sp.cos(theta_sym/5) - 3*sp.cos(2*theta_sym/5) - 3*sp.cos(3*theta_sym/5) - 3*sp.cos(4*theta_sym/5) - 4*sp.cos(theta_sym/10) + sp.cos(6*theta_sym/5) - 4*sp.cos(3*theta_sym/10) + sp.cos(8*theta_sym/5) + sp.cos(9*theta_sym/5) - 4*sp.cos(7*theta_sym/10) - 4*sp.cos(9*theta_sym/10) - 3*sp.cos(theta_sym))
-
-H7_exact = (1/32)*sp.cos(2*theta_sym) - (99/200)*sp.cos(theta_sym/5) - (303/800)*sp.cos(2*theta_sym/5) - (91/200)*sp.cos(3*theta_sym/5) - (17/50)*sp.cos(4*theta_sym/5) - (207/800)*sp.cos(6*theta_sym/5) - (51/200)*sp.cos(7*theta_sym/5) - (27/200)*sp.cos(8*theta_sym/5) - (19/200)*sp.cos(9*theta_sym/5) + (1/50)*sp.cos(12*theta_sym/5) + (9/800)*sp.cos(14*theta_sym/5) + (1/200)*sp.cos(16*theta_sym/5) + (1/800)*sp.cos(18*theta_sym/5) - (3/8)*sp.cos(theta_sym) + 1051/160
-
-H8_exact = sp.sin(theta_sym/2)**2 + sp.sin(theta_sym/5)**2 + sp.sin(2*theta_sym/5)**2 + sp.sin(3*theta_sym/5)**2 + sp.sin(4*theta_sym/5)**2 + sp.sin(theta_sym/10)**2 + sp.sin(3*theta_sym/10)**2 + sp.sin(7*theta_sym/10)**2 + sp.sin(9*theta_sym/10)**2 + sp.sin(theta_sym)**2
-
-H_exact_list = [H1_exact, H2_exact, H3_exact, H4_exact, H5_exact, H6_exact, H7_exact, H8_exact]
-
-# Generate Taylor Expansions up to O(theta^4) and their derivatives
-H_taylor_funcs = []
-dH_taylor_funcs = []
-
-for H in H_exact_list:
-    # 6th order expansion gives up to theta^4 terms safely, removeO() drops the Big-O notation
-    taylor_poly = sp.series(H, theta_sym, 0, 6).removeO() 
-    H_taylor_funcs.append(sp.lambdify(theta_sym, taylor_poly, 'numpy'))
-    
-    # Derivative with respect to theta for the Coriolis matrix C
-    dtaylor_poly = sp.diff(taylor_poly, theta_sym)
-    dH_taylor_funcs.append(sp.lambdify(theta_sym, dtaylor_poly, 'numpy'))
-
-def get_H_factors(theta):
-    """Returns H1 to H8 evaluated at a specific theta"""
-    return np.array([f(theta) for f in H_taylor_funcs])
-
-def get_dH_factors(theta):
-    """Returns dH1/dtheta to dH8/dtheta evaluated at a specific theta"""
-    return np.array([f(theta) for f in dH_taylor_funcs]) 
-H1_exact_sym = (theta_sym**3 + 6*theta_sym - 12*sp.sin(theta_sym) + 6*theta_sym*sp.cos(theta_sym)) / (theta_sym**5)
-H2_exact_sym = (6*theta_sym - 8*sp.sin(theta_sym) + sp.sin(2*theta_sym)) / (theta_sym**3)
-
-# 3. Generate Taylor Expansions dynamically using SymPy
-# Expanding around theta = 0, up to O(theta^4)
-# The paper states Taylor expansions approximate factors with small errors for theta in [-3pi/5, 3pi/5] [cite: 158]
-H1_taylor_sym = sp.series(H1_exact_sym, theta_sym, 0, 6).removeO()
-H2_taylor_sym = sp.series(H2_exact_sym, theta_sym, 0, 6).removeO()
-
-# Convert symbolic functions to numerical functions for fast plotting
-H1_exact_func = sp.lambdify(theta_sym, H1_exact_sym, 'numpy')
-H2_exact_func = sp.lambdify(theta_sym, H2_exact_sym, 'numpy')
-H1_taylor_func = sp.lambdify(theta_sym, H1_taylor_sym, 'numpy')
-H2_taylor_func = sp.lambdify(theta_sym, H2_taylor_sym, 'numpy')
-
-def plot_factor_comparison():
+def _safe_eval(exact_func, taylor_func, theta, threshold=1e-6):
     """
-    Replicates Figure 2: Comparison of exact and equivalent factors of H1 and H2[cite: 201].
+    Evaluate function, switching to Taylor near singularity.
+    
+    Parameters
+    ----------
+    exact_func : callable  exact expression f(θ)
+    taylor_func : callable  Taylor expansion f_taylor(θ)
+    theta : float or array
+    threshold : float  switch threshold |θ| < threshold
+    
+    Returns
+    -------
+    result : float or array
     """
-    # Range specified in the paper: up to ~1.88 rad (approx 3pi/5) [cite: 158]
-    # We start slightly above 0 to avoid DivisionByZero in exact expressions
-    theta_vals = np.linspace(1e-4, 3*np.pi/5, 500)
+    theta = np.asarray(theta, dtype=float)
+    mask_taylor = np.abs(theta) < threshold
     
-    h1_exact = H1_exact_func(theta_vals)
-    h1_taylor = H1_taylor_func(theta_vals)
-    h1_error = h1_exact - h1_taylor
-    
-    h2_exact = H2_exact_func(theta_vals)
-    h2_taylor = H2_taylor_func(theta_vals)
-    h2_error = h2_exact - h2_taylor
+    result = np.where(mask_taylor,
+                      taylor_func(theta),
+                      exact_func(theta))
+    return result
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8), gridspec_kw={'height_ratios': [3, 1]})
-    
-    # Plot H1
-    axs[0, 0].plot(theta_vals, h1_exact, 'r-', linewidth=2, label='With analytical expressions')
-    axs[0, 0].plot(theta_vals, h1_taylor, 'b-', linewidth=2, label='With Taylor expansions')
-    axs[0, 0].set_ylabel('Values of H1')
-    axs[0, 0].legend()
-    axs[0, 0].grid(True)
-    
-    axs[1, 0].plot(theta_vals, h1_error, 'k-', linewidth=2)
-    axs[1, 0].set_ylabel('Error')
-    axs[1, 0].set_xlabel('The bending angle theta (rad)')
-    axs[1, 0].grid(True)
 
-    # Plot H2
-    axs[0, 1].plot(theta_vals, h2_exact, 'r-', linewidth=2, label='With analytical expressions')
-    axs[0, 1].plot(theta_vals, h2_taylor, 'b-', linewidth=2, label='With Taylor expansions')
-    axs[0, 1].set_ylabel('Values of H2')
-    axs[0, 1].legend()
-    axs[0, 1].grid(True)
+# ─────────────────────────────────────────────────────────────────────────────
+# H1 — BACKBONE TRANSLATIONAL KINETIC ENERGY (θ̇² coefficient)
+# Eqs. (10) exact, (12) Taylor
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H1_exact(theta):
+    """Eq. (10): (θ³ + 6θ - 12sinθ + 6θcosθ) / θ⁵"""
+    t = np.asarray(theta, dtype=float)
+    num = t**3 + 6*t - 12*np.sin(t) + 6*t*np.cos(t)
+    return num / t**5
+
+
+def _H1_taylor(theta):
+    """Eq. (12): θ⁴/8640 - θ²/168 + 3/20"""
+    t = np.asarray(theta, dtype=float)
+    return t**4/8640 - t**2/168 + 3/20
+
+
+def H1(theta):
+    return _safe_eval(_H1_exact, _H1_taylor, theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H2 — BACKBONE TRANSLATIONAL KINETIC ENERGY (φ̇² coefficient)
+# Eqs. (11) exact, (13) Taylor
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H2_exact(theta):
+    """Eq. (11): (6θ - 8sinθ + sin(2θ)) / θ³"""
+    t = np.asarray(theta, dtype=float)
+    num = 6*t - 8*np.sin(t) + np.sin(2*t)
+    return num / t**3
+
+
+def _H2_taylor(theta):
+    """Eq. (13): -θ⁴/42 + θ²/5"""
+    t = np.asarray(theta, dtype=float)
+    return -t**4/42 + t**2/5
+
+
+def H2(theta):
+    return _safe_eval(_H2_exact, _H2_taylor, theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H3 — BACKBONE ROTATIONAL KINETIC ENERGY (θ̇² coefficient)
+# Eq. (25) exact
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H3_exact(theta):
+    """Eq. (25): 5/8 - 15/(64θ²) + cos²θ/(2θ²) - sin(2θ)/(8θ³) - sin(4θ)/(256θ³)"""
+    t = np.asarray(theta, dtype=float)
+    return (5/8 
+            - 15/(64*t**2) 
+            + np.cos(t)**2/(2*t**2)
+            - np.sin(2*t)/(8*t**3)
+            - np.sin(4*t)/(256*t**3))
+
+
+def _H3_taylor(theta):
+    """Taylor expansion of H3 around θ=0"""
+    t = np.asarray(theta, dtype=float)
+    return 1/3 + t**2/60 - t**4/840
+
+
+def H3(theta):
+    return _safe_eval(_H3_exact, _H3_taylor, theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H4 — BACKBONE ROTATIONAL KINETIC ENERGY (φ̇² coefficient)
+# Eq. (26) exact
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H4_exact(theta):
+    """Eq. (26): 1/2 - θ·sin(2θ)/(4θ²)"""
+    t = np.asarray(theta, dtype=float)
+    return 1/2 - t*np.sin(2*t)/(4*t**2)
+
+
+def _H4_taylor(theta):
+    """Taylor expansion of H4 around θ=0"""
+    t = np.asarray(theta, dtype=float)
+    return t**2/6 - t**4/60
+
+
+def H4(theta):
+    return _safe_eval(_H4_exact, _H4_taylor, theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H5 — DISK TRANSLATIONAL KINETIC ENERGY (θ̇² coefficient)
+# Eq. (27) exact — sum over k=1..10 disks at s_k = k·L/10
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H5_exact(theta, N=10):
+    """
+    Eq. (27): Complex form summing over disks.
+    Numerical integration approach: sum ∫ (dr_k/dθ)² over all disk positions.
+    """
+    t = np.asarray(theta, dtype=float)
+    scalar = t.ndim == 0
+    t = np.atleast_1d(t)
+    result = np.zeros_like(t)
     
-    axs[1, 1].plot(theta_vals, h2_error, 'k-', linewidth=2)
-    axs[1, 1].set_ylabel('Error')
-    axs[1, 1].set_xlabel('The bending angle theta (rad)')
-    axs[1, 1].grid(True)
+    for i, th in enumerate(t):
+        if np.abs(th) < 1e-8:
+            # Small angle: (1-cosθ_k)²/θ² + sin²θ_k/θ² ≈ (θ_k/2)² + θ_k² = 5θ_k²/4
+            s_sum = sum((k/N)**2 * (5/4) for k in range(1, N+1))
+            result[i] = s_sum / (N**2)
+        else:
+            s_sum = 0.0
+            for k in range(1, N+1):
+                frac = k / N  # s_k / L
+                th_k = frac * th
+                term = (1 - np.cos(th_k))**2 / th**2 + np.sin(th_k)**2 / th**2
+                s_sum += term
+            result[i] = s_sum / (N**2)
+    
+    return result[0] if scalar else result
 
-    plt.tight_layout()
-    plt.show()
 
-if __name__ == "__main__":
-    plot_factor_comparison()
+def _H5_taylor(theta, N=10):
+    """Taylor approximation of H5"""
+    t = np.asarray(theta, dtype=float)
+    const = sum((k/N)**2 for k in range(1, N+1)) / (N**2)  # ≈ 0.3717
+    return np.full_like(t, const, dtype=float) + t**2/12 * const
+
+
+def H5(theta, N=10):
+    return _safe_eval(lambda x: _H5_exact(x, N),
+                      lambda x: _H5_taylor(x, N),
+                      theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H6 — DISK TRANSLATIONAL KINETIC ENERGY (φ̇² coefficient)
+# Eq. (28) exact
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H6_exact(theta, N=10):
+    """Eq. (28): Sum over disks of (1-cosθ_k)²/θ²"""
+    t = np.asarray(theta, dtype=float)
+    scalar = t.ndim == 0
+    t = np.atleast_1d(t)
+    result = np.zeros_like(t)
+    
+    for i, th in enumerate(t):
+        if np.abs(th) < 1e-8:
+            s_sum = sum((k/N)**2 * (k/N)**2 / 4 for k in range(1, N+1))
+            result[i] = s_sum / (N**2)
+        else:
+            s_sum = 0.0
+            for k in range(1, N+1):
+                frac = k / N
+                th_k = frac * th
+                term = (1 - np.cos(th_k))**2 / th**2
+                s_sum += term
+            result[i] = s_sum / (N**2)
+    
+    return result[0] if scalar else result
+
+
+def _H6_taylor(theta, N=10):
+    t = np.asarray(theta, dtype=float)
+    const = sum((k/N)**4 for k in range(1, N+1)) / (4 * N**2)
+    return np.full_like(t, const, dtype=float)
+
+
+def H6(theta, N=10):
+    return _safe_eval(lambda x: _H6_exact(x, N),
+                      lambda x: _H6_taylor(x, N),
+                      theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H7 — DISK ROTATIONAL KINETIC ENERGY (θ̇² coefficient)
+# Eq. (29) exact
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H7_exact(theta, N=10):
+    """Eq. (29): Sum over disks of angular velocity squared contribution"""
+    t = np.asarray(theta, dtype=float)
+    scalar = t.ndim == 0
+    t = np.atleast_1d(t)
+    result = np.zeros_like(t)
+    
+    for i, th in enumerate(t):
+        s_sum = 0.0
+        for k in range(1, N+1):
+            frac = k / N
+            th_k = frac * th
+            # ω_k² from θ̇² part: sin²(θ_k)/θ² + cos²(θ_k)·(s_k/L)²
+            term = (np.sin(th_k) / th)**2 + np.cos(th_k)**2 * frac**2
+            s_sum += term
+        result[i] = s_sum / (N**2)
+    
+    return result[0] if scalar else result
+
+
+def _H7_taylor(theta, N=10):
+    t = np.asarray(theta, dtype=float)
+    const = sum(frac**2 for frac in [k/N for k in range(1, N+1)]) / (N**2)
+    return np.full_like(t, const, dtype=float)
+
+
+def H7(theta, N=10):
+    return _safe_eval(lambda x: _H7_exact(x, N),
+                      lambda x: _H7_taylor(x, N),
+                      theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# H8 — DISK ROTATIONAL KINETIC ENERGY (φ̇² coefficient)
+# Eq. (30) exact
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _H8_exact(theta, N=10):
+    """Eq. (30): Sum over disks of sin²(θ_k)"""
+    t = np.asarray(theta, dtype=float)
+    scalar = t.ndim == 0
+    t = np.atleast_1d(t)
+    result = np.zeros_like(t)
+    
+    for i, th in enumerate(t):
+        s_sum = 0.0
+        for k in range(1, N+1):
+            frac = k / N
+            th_k = frac * th
+            s_sum += np.sin(th_k)**2
+        result[i] = s_sum / (N**2)
+    
+    return result[0] if scalar else result
+
+
+def _H8_taylor(theta, N=10):
+    t = np.asarray(theta, dtype=float)
+    const = sum((k/N)**2 for k in range(1, N+1)) / (N**2)
+    return np.full_like(t, const, dtype=float)
+
+
+def H8(theta, N=10):
+    return _safe_eval(lambda x: _H8_exact(x, N),
+                      lambda x: _H8_taylor(x, N),
+                      theta)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PARTIAL DERIVATIVES dH/dθ (used in Coriolis matrix C)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def dH_dtheta(H_func, theta, eps=1e-5):
+    """Central-difference numerical derivative of any H function."""
+    return (H_func(theta + eps) - H_func(theta - eps)) / (2 * eps)
+
+
+# Convenience wrappers for all eight
+def get_all_H(theta):
+    """Return [H1, H2, ..., H8] as array."""
+    return np.array([H1(theta), H2(theta), H3(theta), H4(theta),
+                     H5(theta), H6(theta), H7(theta), H8(theta)])
+
+
+def get_all_dH(theta):
+    """Return [dH1/dθ, dH2/dθ, ..., dH8/dθ] as array."""
+    return np.array([
+        dH_dtheta(H1, theta),
+        dH_dtheta(H2, theta),
+        dH_dtheta(H3, theta),
+        dH_dtheta(H4, theta),
+        dH_dtheta(H5, theta),
+        dH_dtheta(H6, theta),
+        dH_dtheta(H7, theta),
+        dH_dtheta(H8, theta)
+    ])
