@@ -134,14 +134,16 @@ def simulate_idr_example2():
     """
     Track trajectory: θ = (π/4)·t, φ = π/6
     Paper: Fig. 13
-    
-    Returns: t, θ, φ, [F1, F2] (required cable forces)
     """
-    t_start, t_end = 0.0, 10.0
+    import numpy as np
+    from dynamics import inverse_dynamics_3cables
+    
+    # زمان را به 1 ثانیه کاهش دادیم تا زاویه نهایی 45 درجه (pi/4) شود
+    t_start, t_end = 0.0, 1.0  
     num_points = 501
     t = np.linspace(t_start, t_end, num_points)
     
-    # Desired trajectory
+    # مسیر مطلوب خطی
     theta_d = (np.pi / 4) * t
     phi_d = np.ones_like(t) * (np.pi / 6)
     dtheta_d = np.ones_like(t) * (np.pi / 4)
@@ -149,18 +151,16 @@ def simulate_idr_example2():
     dphi_d = np.zeros_like(t)
     ddphi_d = np.zeros_like(t)
     
-    # Compute required forces
-    F1_array = np.zeros(num_points)
-    F2_array = np.zeros(num_points)
+    # آرایه برای ذخیره نیروی 3 کابل
+    F_array = np.zeros((3, num_points))
     
     for i in range(num_points):
-        F = inverse_dynamics(theta_d[i], phi_d[i],
-                            dtheta_d[i], dphi_d[i],
-                            ddtheta_d[i], ddphi_d[i])
-        F1_array[i] = F[0]
-        F2_array[i] = F[1]
+        F = inverse_dynamics_3cables(theta_d[i], phi_d[i],
+                                     dtheta_d[i], dphi_d[i],
+                                     ddtheta_d[i], ddphi_d[i])
+        F_array[:, i] = F
     
-    return t, theta_d, phi_d, np.array([F1_array, F2_array])
+    return t, theta_d, phi_d, F_array
 
 
 # ─────────────────────────────────────────────────────────────────────────────
