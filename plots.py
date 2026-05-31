@@ -236,45 +236,55 @@ def plot_idr_example1():
     return fig
 
 
-def plot_idr_example2():
-    """Figure 13: Inverse dynamics tracking angled trajectory."""
-    print("  Running IDR Example 2 simulation...")
-    t, theta_d, phi_d, F_req = simulate_idr_example2()
+def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
+    theta = state[0, :]
+    phi = state[1, :]
     
-    theta_deg = theta_d * 180 / np.pi
+    # 1. محاسبه مختصات دکارتی نقطه انتهایی (سینماتیک مستقیم - معادله 1)
+    X_mm = np.zeros_like(theta)
+    Z_mm = np.zeros_like(theta)
     
-    fig, axes = plt.subplots(2, 1, figsize=(11, 8))
-    
-    # Workspace projection
-    # Handle theta ~0 at start carefully
-    x_traj = np.zeros_like(theta_d)
-    z_traj = np.zeros_like(theta_d)
-    for i, theta in enumerate(theta_d):
-        if abs(theta) > 1e-6:
-            x_traj[i] = (L/theta) * (1 - np.cos(theta)) * np.cos(phi_d[i])
-            z_traj[i] = (L/theta) * np.sin(theta)
-    
-    axes[0].plot(x_traj * 1000, z_traj * 1000, 'r-', linewidth=2, label='Desired path')
-    axes[0].set_xlabel('X (mm)', fontsize=11)
-    axes[0].set_ylabel('Z (mm)', fontsize=11)
-    axes[0].set_title('(a) Desired path on 2-DOF CDCR workspace', fontsize=11)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].legend(fontsize=10)
-    
-    # Required forces
-    axes[1].plot(t, F_req[0], 'g-', linewidth=2, label='F₁')
-    axes[1].plot(t, F_req[1], 'm-', linewidth=2, label='F₂')
-    axes[1].set_ylabel('Force (N)', fontsize=11)
-    axes[1].set_xlabel('Time (sec)', fontsize=11)
-    axes[1].set_title('(b) Temporal evolution of actuation forces', fontsize=11)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].legend(fontsize=10)
-    
-    plt.suptitle('Figure 13: IDR Example 2 (θ=(π/4)t, φ=π/6)', 
-                 fontsize=13, fontweight='bold')
-    plt.tight_layout()
-    return fig
+    for i in range(len(theta)):
+        th = theta[i]
+        ph = phi[i]
+        if abs(th) < 1e-6:
+            X_mm[i] = 0.0
+            Z_mm[i] = L * 1000.0  # تبدیل متر به میلی‌متر
+        else:
+            X_mm[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
+            Z_mm[i] = (L / th) * np.sin(th) * 1000.0
 
+    # 2. رسم دقیقاً مطابق قالب مقاله
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    
+    # Subfig 1: Temporal evolution of cable tensions
+    ax1.plot(t, F1_vals, 'k-', linewidth=1.5, label='F1')
+    ax1.plot(t, F2_vals, 'b--', linewidth=1.5, label='F2')
+    ax1.plot(t, F3_vals, 'r-.', linewidth=1.5, label='F3')
+    ax1.set_title("Temporal evolution of cable tensions")
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Tension (N)")
+    ax1.grid(True)
+    ax1.legend()
+    
+    # Subfig 2: Cartesian coordinates
+    ax2.plot(X_mm, Z_mm, 'k-', linewidth=2)
+    ax2.set_title("Cartesian coordinates of the end-point")
+    ax2.set_xlabel("X (mm)")
+    ax2.set_ylabel("Z (mm)")
+    
+    # اعمال دقیق لیمیت‌های درخواستی شما
+    ax2.set_xlim([0, 600])
+    ax2.set_ylim([400, 600]) 
+    
+    # نکته: اگر می‌خواهید خط حرکت 5 نیوتنی را ببینید، خط بالا را کامنت کنید 
+    # و به جای آن از کد زیر استفاده کنید:
+    # ax2.set_ylim([750, 810])
+    
+    ax2.grid(True)
+    plt.tight_layout()
+    plt.show()
+    return fig
 
 def plot_pid_control():
     """Figure 14: PID control response."""
