@@ -286,6 +286,47 @@ def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
     plt.show()
     return fig
 
+def plot_idr_example2():
+    """Figure 13: Inverse dynamics tracking linear trajectory."""
+    print("  Running IDR Example 2 simulation...")
+    t, theta_d, phi_d, F_req = simulate_idr_example2()
+    
+    fig, axes = plt.subplots(2, 1, figsize=(11, 8))
+    
+    # 1. محاسبه مسیر دکارتی (تبدیل به میلی‌متر)
+    x_traj = np.zeros_like(theta_d)
+    z_traj = np.zeros_like(theta_d)
+    
+    for i in range(len(theta_d)):
+        th = theta_d[i]
+        ph = phi_d[i]
+        if abs(th) < 1e-6:
+            x_traj[i] = 0.0
+            z_traj[i] = L * 1000.0
+        else:
+            x_traj[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
+            z_traj[i] = (L / th) * np.sin(th) * 1000.0
+    
+    axes[0].plot(x_traj, z_traj, 'b-', linewidth=2, label='Desired path')
+    axes[0].set_xlabel('X (mm)', fontsize=11)
+    axes[0].set_ylabel('Z (mm)', fontsize=11)
+    axes[0].set_title('(a) Desired path on 2-DOF CDCR workspace', fontsize=11)
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend(fontsize=10)
+    
+    # 2. رسم نیروهای کنترلی مورد نیاز
+    axes[1].plot(t, F_req[0], 'g-', linewidth=2, label='F₁')
+    axes[1].plot(t, F_req[1], 'm-', linewidth=2, label='F₂')
+    axes[1].set_ylabel('Force (N)', fontsize=11)
+    axes[1].set_xlabel('Time (sec)', fontsize=11)
+    axes[1].set_title('(b) Temporal evolution of actuation forces', fontsize=11)
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend(fontsize=10)
+    
+    plt.suptitle('Figure 13: IDR Example 2 (Linear: θ=(π/4)t, φ=π/6)', 
+                 fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    return fig
 def plot_pid_control():
     """Figure 14: PID control response."""
     print("  Running PID control simulation...")
