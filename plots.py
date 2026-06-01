@@ -396,57 +396,45 @@ def plot_pid_control():
     print("  Running PID Control simulation...")
     t, state_history, force_history = simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01)
     
-    # تبدیل رادیان به درجه برای رسم در نمودار
     theta_deg = state_history[0, :] * 180.0 / np.pi
     phi_deg = state_history[1, :] * 180.0 / np.pi
-    
     F1 = force_history[0, :]
     
-    # ایجاد 3 ساب‌پلات مجزا روی هم
-    fig, axes = plt.subplots(3, 1, figsize=(10, 11))
+    fig, axes = plt.subplots(3, 1, figsize=(9, 10))
     
-    # ----------------------------------------------------
-    # Subplot 1: Bending angle theta
-    # ----------------------------------------------------
-    axes[0].plot(t, theta_deg, 'k-', linewidth=2.5, label=r'Bending angle $\theta$')
-    axes[0].axhline(y=15.53, color='r', linestyle='-.', linewidth=1.5, label=r'Target $\theta = 15.53^\circ$')
+    # --- Subplot 1: Theta ---
+    axes[0].plot(t, theta_deg, 'k-', linewidth=2, label=r'Bending angle $\theta(t)$')
+    axes[0].axhline(y=15.53, color='r', linestyle='--', linewidth=1.5, label=r'Target $\theta_{ref} = 15.53^\circ$')
+    axes[0].set_title(r"Dynamic response for the bending angle $\theta$", fontweight='bold')
+    axes[0].set_ylabel(r"Angle $(^\circ)$")
+    axes[0].set_ylim([0, 18])  # بازه دقیق‌تر و زیباتر
+    axes[0].set_xlim([0, 5])
+    axes[0].grid(True, linestyle=':', alpha=0.7)
+    axes[0].legend(loc='lower right')
     
-    axes[0].set_title("Dynamic response for the bending angle", fontsize=11)
-    axes[0].set_ylabel("Angle (deg)", fontsize=11)
-    axes[0].set_ylim([-2, 20])
-    axes[0].grid(True, alpha=0.5)
-    axes[0].legend(loc='lower right', fontsize=10)
+    # --- Subplot 2: Phi ---
+    axes[1].plot(t, phi_deg, 'b-', linewidth=2, label=r'Orientation angle $\phi(t)$')
+    axes[1].axhline(y=0.0, color='r', linestyle='--', linewidth=1.5, label=r'Target $\phi_{ref} = 0^\circ$')
+    axes[1].set_title(r"Dynamic response for the orientation angle $\phi$", fontweight='bold')
+    axes[1].set_ylabel(r"Angle $(^\circ)$")
+    axes[1].set_ylim([-0.5, 0.5]) # زوم روی صفر برای نشان دادن پایداری مطلق
+    axes[1].set_xlim([0, 5])
+    axes[1].grid(True, linestyle=':', alpha=0.7)
+    axes[1].legend(loc='upper right')
     
-    # ----------------------------------------------------
-    # Subplot 2: Orientation angle phi
-    # ----------------------------------------------------
-    axes[1].plot(t, phi_deg, 'b-', linewidth=2.5, label=r'Orientation angle $\phi$')
-    axes[1].axhline(y=0.0, color='r', linestyle='-.', linewidth=1.5, label=r'Target $\phi = 0^\circ$')
+    # --- Subplot 3: Force F1 ---
+    axes[2].plot(t, F1, 'g-', linewidth=2, label=r'Actuation Force $F_1(t)$')
+    axes[2].axhline(y=5.0, color='r', linestyle='--', linewidth=1.5, label=r'Steady-state $F_{ss} = 5$ N')
+    axes[2].set_title(r"Temporal evolution of the actuation force $F_1$", fontweight='bold')
+    axes[2].set_xlabel(r"Time (s)")
+    axes[2].set_ylabel(r"Force (N)")
+    axes[2].set_ylim([0, 8]) # بازه مناسب برای نمایش اورشوت اولیه و رسیدن به 5
+    axes[2].set_xlim([0, 5])
+    axes[2].grid(True, linestyle=':', alpha=0.7)
+    axes[2].legend(loc='upper right')
     
-    axes[1].set_title("Dynamic response for the orientation angle", fontsize=11)
-    axes[1].set_ylabel("Angle (deg)", fontsize=11)
-    axes[1].set_ylim([-1, 1])  # کادر محدودتر برای نشان دادن اینکه روی صفر ثابت است
-    axes[1].grid(True, alpha=0.5)
-    axes[1].legend(loc='upper right', fontsize=10)
-    
-    # ----------------------------------------------------
-    # Subplot 3: Actuation force F1
-    # ----------------------------------------------------
-    axes[2].plot(t, F1, 'g-', linewidth=2.5, label='F1 (Cable 1 Tension)')
-    axes[2].axhline(y=5.0, color='r', linestyle='-.', linewidth=1.5, label='Target F1 = 5N')
-    
-    axes[2].set_title("Temporal evolution of the actuation force", fontsize=11)
-    axes[2].set_xlabel("Time (s)", fontsize=11)
-    axes[2].set_ylabel("Force (N)", fontsize=11)
-    axes[2].set_ylim([-1, 10])
-    axes[2].grid(True, alpha=0.5)
-    axes[2].legend(loc='upper right', fontsize=10)
-    
-    plt.suptitle("Figure 14: Dynamic responses in closed-loop with PID controller", 
-                 fontsize=13, fontweight='bold')
     plt.tight_layout()
     return fig
-
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN EXECUTION
 # ─────────────────────────────────────────────────────────────────────────────
