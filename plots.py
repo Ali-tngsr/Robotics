@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+import os  # این خط را در بالای فایل هم می‌توانید بگذارید
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PUBLICATION-QUALITY PLOT SETTINGS (LaTeX Style)
@@ -473,6 +474,25 @@ def generate_all_plots(show=True, save=False):
     print("Figure 14 (PID Control)...")
     figs['fig14'] = plot_pid_control()
     
+
+    # ... (کدهای قبلی که نمودارها را تولید می‌کردند) ...
+    
+    # 🟢 منطق ذخیره‌سازی نمودارها
+    if save:
+        print("\nSaving high-quality plots...")
+        save_dir = "saved_plots"
+        os.makedirs(save_dir, exist_ok=True)  # ساخت پوشه در صورت عدم وجود
+        
+        for fig_name, fig in figs.items():
+            if fig is not None:
+                filepath = os.path.join(save_dir, f"{fig_name}.png")
+                # ذخیره با کیفیت 300 DPI و حذف حاشیه‌های سفید اضافی (tight)
+                fig.savefig(filepath, dpi=300, bbox_inches='tight', format='png')
+                print(f"  -> Saved: {filepath}")
+                
+                # اگر فرمت وکتور (PDF) برای لتکس هم می‌خواهید، می‌توانید خط زیر را هم اضافه کنید:
+                # fig.savefig(filepath.replace('.png', '.pdf'), bbox_inches='tight', format='pdf')
+
     if show:
         plt.show()
     
@@ -484,4 +504,4 @@ def generate_all_plots(show=True, save=False):
 
 
 if __name__ == '__main__':
-    figs = generate_all_plots(show=True, save=False)
+    figs = generate_all_plots(show=True, save=True)
