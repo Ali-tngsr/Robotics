@@ -152,3 +152,28 @@ def angular_velocity(s, theta, phi, theta_dot, phi_dot, L):
     T_hat = _skew(t_s)
     
     return T_hat @ t_dot
+    
+def jacobian_end_effector(theta, phi, L):
+    """
+    Computes the 3x2 Jacobian matrix for the end-effector (s=L).
+    v_e = J_e * [theta_dot, phi_dot]^T
+    """
+    eps = 1e-10
+    if np.abs(theta) < eps:
+        theta = eps
+    
+    # مشتقات موقعیت نقطه انتهایی نسبت به تتا (s = L)
+    dr_dtheta = np.array([
+        (L/theta) * np.sin(theta) * np.cos(phi) - (L/theta**2) * (1 - np.cos(theta)) * np.cos(phi),
+        (L/theta) * np.sin(theta) * np.sin(phi) - (L/theta**2) * (1 - np.cos(theta)) * np.sin(phi),
+        (L/theta) * np.cos(theta) - (L/theta**2) * np.sin(theta)
+    ])
+    
+    # مشتقات موقعیت نقطه انتهایی نسبت به فی (s = L)
+    dr_dphi = np.array([
+        -(L/theta) * (1 - np.cos(theta)) * np.sin(phi),
+         (L/theta) * (1 - np.cos(theta)) * np.cos(phi),
+        0.0
+    ])
+    
+    return np.column_stack((dr_dtheta, dr_dphi))
