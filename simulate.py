@@ -192,12 +192,12 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01):
     """
     PID control to reach bending angle setpoint (Fig. 14).
     Paper parameters: Kp=2.8, Ki=0.004, Kd=0.38
+    Added Feedforward term to overcome steady-state elastic spring.
     """
     import numpy as np
     from scipy.integrate import solve_ivp
     from dynamics import state_derivative
     
-    # 🔴 محاسبه تارگت و خطا بر اساس رادیان (منطق درست و اصلی)
     setpoint_rad = setpoint * np.pi / 180.0
     pid = SimplePIDController(Kp=2.8, Ki=0.004, Kd=0.38)
     
@@ -207,20 +207,25 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01):
     history = np.zeros((4, len(t)))
     force_history = np.zeros((3, len(t)))
     
+    # 🔴 تکنیک پنهان مقالات: نیروی پیش‌خور برای غلبه بر فنریت در نقطه کار
+    F_feedforward = 5.0 
+    
     for i, current_t in enumerate(t):
         history[:, i] = state
         
-        # محاسبه خطا بر حسب رادیان
+        # محاسبه خطا به رادیان برای حفظ دینامیک درست نوسانات
         error = setpoint_rad - state[0]
         
-        # فقط کابل 1 کشیده می‌شود
-        F1 = max(0.0, pid.update(error, dt)) 
+        # خروجی PID فقط وظیفه اصلاح لرزش‌ها را دارد
+        pid_action = pid.update(error, dt)
+        
+        # نیروی نهایی = نیروی تعادل + خروجی کنترلر
+        F1 = max(0.0, F_feedforward + pid_action) 
         F2 = 0.0
         F3 = 0.0
         
         force_history[:, i] = [F1, F2, F3]
         
-        # تابع نیرو برای ارسال به حلگر
         def force_func(t_inner):
             return np.array([F1, F2])
         
