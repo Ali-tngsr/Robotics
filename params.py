@@ -42,3 +42,9 @@ I_zz = 0.50 * m_d * R_d**2  # kg·m^2 — about Z axis (local frame)
 # ─────────────────────────────────────────────────────────────────────────────
 THETA_MAX = 3 * np.pi / 5   # rad ≈ 1.884 (≈108°)
 THETA_MIN = -THETA_MAX
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PAYLOAD & ENVIRONMENT (Added for Extension Phase)
+# ─────────────────────────────────────────────────────────────────────────────
+m_p = 0.150                 # kg — payload mass (150 grams for example)
+g   = 9.81                  # m/s^2 — gravitational acceleration
