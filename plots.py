@@ -480,7 +480,7 @@ def generate_all_plots(show=True, save=False):
     # 🟢 منطق ذخیره‌سازی نمودارها
     if save:
         print("\nSaving high-quality plots...")
-        save_dir = "saved_plots"
+        save_dir = "figure"
         os.makedirs(save_dir, exist_ok=True)  # ساخت پوشه در صورت عدم وجود
         
         for fig_name, fig in figs.items():
