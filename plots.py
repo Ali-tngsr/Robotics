@@ -4,6 +4,27 @@ Generate validation plots against paper figures.
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLICATION-QUALITY PLOT SETTINGS (LaTeX Style)
+# ─────────────────────────────────────────────────────────────────────────────
+# استفاده از فونت‌های استاندارد مقالات (Computer Modern)
+mpl.rcParams['mathtext.fontset'] = 'cm'
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Computer Modern Roman', 'Times New Roman', 'DejaVu Serif']
+
+# اگر روی سیستم خود توزیع LaTeX (مثل TeXLive یا MiKTeX) نصب دارید، 
+# می‌توانید خط زیر را از حالت کامنت خارج کنید تا رندر کاملاً واقعی شود:
+# mpl.rcParams['text.usetex'] = True 
+
+# تنظیم سایز استاندارد برای متون
+mpl.rcParams['axes.titlesize'] = 12
+mpl.rcParams['axes.labelsize'] = 11
+mpl.rcParams['legend.fontsize'] = 10
+mpl.rcParams['xtick.labelsize'] = 10
+mpl.rcParams['ytick.labelsize'] = 10
 from params import L, THETA_MAX
 from taylor_factors import (H1, H2, H3, H4, H5, H6, H7, H8,
                             _H1_exact, _H1_taylor, _H2_exact, _H2_taylor,
