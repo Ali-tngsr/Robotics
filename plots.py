@@ -449,35 +449,31 @@ def generate_all_plots(show=True, save=False):
     figs = {}
     
     print("Figure 2 (H₁, H₂)...")
-    figs['fig2'] = plot_H1_H2_comparison()
+    figs['fig02_H1_H2'] = plot_H1_H2_comparison()
     
     print("Figure 3 (H₃, H₄)...")
-    figs['fig3'] = plot_H3_H4_comparison()
+    figs['fig03_H3_H4'] = plot_H3_H4_comparison()
     
     print("Figure 8 (Static Equilibrium)...")
-    figs['fig8'] = plot_static_equilibrium()
+    figs['fig08_static_equilibrium'] = plot_static_equilibrium()
     
     print("Figure 9 (FDR Example 1)...")
-    figs['fig9'] = plot_fdr_example1()
+    figs['fig09_fdr_example1.'] = plot_fdr_example1()
     
     print("Figure 10 (FDR Example 2)...")
-    # 🔴 تغییر کلیدی برای رفع ارور در این دو خط است:
     t_fdr2, state_fdr2, f1, f2, f3 = simulate_fdr_example2()
-    figs['fig10'] = plot_fdr_example2(t_fdr2, state_fdr2, f1, f2, f3)
+    figs['fig10_fdr_example2'] = plot_fdr_example2(t_fdr2, state_fdr2, f1, f2, f3)
     
     print("Figure 12 (IDR Example 1)...")
-    figs['fig12'] = plot_idr_example1()
+    figs['fig12_idr_example1'] = plot_idr_example1()
     
     print("Figure 13 (IDR Example 2)...")
-    figs['fig13'] = plot_idr_example2()
+    figs['fig13_idr_example2'] = plot_idr_example2()
     
     print("Figure 14 (PID Control)...")
-    figs['fig14'] = plot_pid_control()
+    figs['fig14_pid_control'] = plot_pid_control()
     
 
-    # ... (کدهای قبلی که نمودارها را تولید می‌کردند) ...
-    
-    # 🟢 منطق ذخیره‌سازی نمودارها
     if save:
         print("\nSaving high-quality plots...")
         save_dir = "figure"
