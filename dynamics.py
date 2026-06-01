@@ -5,29 +5,28 @@ Kinetic energy T, Potential energy U, and dynamic model via Euler-Lagrange.
 Core: assemble M(θ), C(θ), K, D(θ,φ) and solve for accelerations.
 """
 import numpy as np
-from params import L, m_b, m_d, I_b, I_xx, E
 from taylor_factors import get_all_H, get_all_dH, H1, H2, H3, H4, H5, H6, H7, H8
-
+from params import L, m_b, m_d, I_b, I_xx, E, m_p, g
+from kinematics import jacobian_end_effector
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MASS MATRIX M(θ)  — Eq. (21)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def mass_matrix(theta):
-    """
-    2×2 symmetric inertia matrix.
-    
-    M11 = ℓ² m_b H1 + ℓ I_b H3 + ℓ² m_d H5 + I_xx H7
-    M22 = ℓ² m_b H2 + ℓ I_b H4 + ℓ² m_d H6 + I_xx H8
-    M12 = M21 = 0
-    """
     h = get_all_H(theta)
     
-    M11 = L**2 * m_b * h[0] + L * I_b * h[2] + L**2 * m_d * h[4] + I_xx * h[6]
-    M22 = L**2 * m_b * h[1] + L * I_b * h[3] + L**2 * m_d * h[5] + I_xx * h[7]
+    M11_base = L**2 * m_b * h[0] + L * I_b * h[2] + L**2 * m_d * h[4] + I_xx * h[6]
+    M22_base = L**2 * m_b * h[1] + L * I_b * h[3] + L**2 * m_d * h[5] + I_xx * h[7]
+    M_base = np.array([[M11_base,  0.0],
+                       [0.0, M22_base]])
     
-    return np.array([[M11,  0.0],
-                     [0.0, M22]])
+    # --- افزودن اثر جرم بار (Payload) ---
+    # چون J^T*J از phi مستقل است، با خیال راحت phi=0.0 می‌گذاریم
+    J_e = jacobian_end_effector(theta, 0.0, L)
+    M_payload = m_p * (J_e.T @ J_e)
+    
+    return M_base + M_payload
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -35,23 +34,27 @@ def mass_matrix(theta):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def coriolis_matrix(theta):
-    """
-    2×3 matrix C such that Q_coriolis = C · [θ̇², θ̇φ̇, φ̇²]^T.
-    
-    From Eq. (22):
-      C11 = (1/2) dM11/dθ
-      C12 = C21 = C23 = 0
-      C13 = -(1/2) dM22/dθ
-      C22 = dM22/dθ
-    """
     dh = get_all_dH(theta)
     
-    dM11_dtheta = L**2 * m_b * dh[0] + L * I_b * dh[2] + L**2 * m_d * dh[4] + I_xx * dh[6]
-    dM22_dtheta = L**2 * m_b * dh[1] + L * I_b * dh[3] + L**2 * m_d * dh[5] + I_xx * dh[7]
+    dM11_base = L**2 * m_b * dh[0] + L * I_b * dh[2] + L**2 * m_d * dh[4] + I_xx * dh[6]
+    dM22_base = L**2 * m_b * dh[1] + L * I_b * dh[3] + L**2 * m_d * dh[5] + I_xx * dh[7]
     
-    C11 =  0.5 * dM11_dtheta
-    C13 = -0.5 * dM22_dtheta
-    C22 =        dM22_dtheta
+    # --- افزودن اثر بار بر ماتریس کوریولیس (با استفاده از مشتق‌گیری عددی) ---
+    delta = 1e-5
+    J_plus = jacobian_end_effector(theta + delta, 0.0, L)
+    M_p_plus = m_p * (J_plus.T @ J_plus)
+    
+    J_minus = jacobian_end_effector(theta - delta, 0.0, L)
+    M_p_minus = m_p * (J_minus.T @ J_minus)
+    
+    dM_p_dtheta = (M_p_plus - M_p_minus) / (2 * delta)
+    
+    dM11_total = dM11_base + dM_p_dtheta[0, 0]
+    dM22_total = dM22_base + dM_p_dtheta[1, 1]
+    
+    C11 =  0.5 * dM11_total
+    C13 = -0.5 * dM22_total
+    C22 =        dM22_total
     
     return np.array([[C11,   0.0, C13],
                      [0.0,  C22,  0.0]])
@@ -118,6 +121,20 @@ def damping_matrix():
     B22 = 0.002
     return np.array([[B11,  0.0],
                      [0.0,  B22]])
+
+def gravity_vector(theta):
+    """
+    بردار نیروی گرانش ناشی از جرم بار متصل به انتهای ربات.
+    G = [∂U_g/∂θ, ∂U_g/∂φ]^T
+    """
+    eps = 1e-10
+    if np.abs(theta) < eps:
+        dUg_dtheta = 0.0
+    else:
+        # مشتق انرژی پتانسیل گرانشی (m_p * g * z_e) نسبت به تتا
+        dUg_dtheta = m_p * g * L * (theta * np.cos(theta) - np.sin(theta)) / (theta**2)
+        
+    return np.array([dUg_dtheta, 0.0])
 # ─────────────────────────────────────────────────────────────────────────────
 # FULL EQUATIONS OF MOTION  — Eq. (20)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,28 +142,25 @@ def damping_matrix():
 def state_derivative(t, state, force_func):
     theta, phi, theta_dot, phi_dot = state
     
-    # Protect singularity
     if abs(theta) < 1e-8:
         theta = 1e-8
     
-    # Get forces from controller
-    F = force_func(t)  # [F1, F2]
+    F = force_func(t)
     
-    # Assemble matrices
     M = mass_matrix(theta)
     C = coriolis_matrix(theta)
     K = stiffness_matrix()
     D = force_matrix(theta, phi)
-    B = damping_matrix()  # <--- اضافه شدن ماتریس میرایی
+    B = damping_matrix()
+    G_vec = gravity_vector(theta)  # <--- محاسبه گرانش
     
     q = np.array([theta, phi])
-    q_dot = np.array([theta_dot, phi_dot])  # <--- تعریف بردار سرعت
+    q_dot = np.array([theta_dot, phi_dot])
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    # Right-hand side: M·q̈ = D·F - C·v - K·q - B·q̇
-    rhs = D @ F - C @ vel - K @ q - B @ q_dot  # <--- اضافه شدن ترم میرایی
+    # در سمت راست معادله، G_vec از نیروها کم می‌شود
+    rhs = D @ F - C @ vel - K @ q - B @ q_dot - G_vec 
     
-    # Solve for accelerations (M is always invertible)
     try:
         q_ddot = np.linalg.solve(M, rhs)
     except np.linalg.LinAlgError:
