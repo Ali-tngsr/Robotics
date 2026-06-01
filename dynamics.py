@@ -6,7 +6,8 @@ Core: assemble M(θ), C(θ), K, D(θ,φ) and solve for accelerations.
 """
 import numpy as np
 from taylor_factors import get_all_H, get_all_dH, H1, H2, H3, H4, H5, H6, H7, H8
-from params import L, m_b, m_d, I_b, I_xx, E, m_p, g
+from params import L, m_b, m_d, I_b, I_xx, E
+import params
 from kinematics import jacobian_end_effector
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ from kinematics import jacobian_end_effector
 # ─────────────────────────────────────────────────────────────────────────────
 
 def mass_matrix(theta):
+    from taylor_factors import get_all_H
     h = get_all_H(theta)
     
     M11_base = L**2 * m_b * h[0] + L * I_b * h[2] + L**2 * m_d * h[4] + I_xx * h[6]
@@ -21,10 +23,9 @@ def mass_matrix(theta):
     M_base = np.array([[M11_base,  0.0],
                        [0.0, M22_base]])
     
-    # --- افزودن اثر جرم بار (Payload) ---
-    # چون J^T*J از phi مستقل است، با خیال راحت phi=0.0 می‌گذاریم
+    # استفاده از params.m_p به صورت زنده
     J_e = jacobian_end_effector(theta, 0.0, L)
-    M_payload = m_p * (J_e.T @ J_e)
+    M_payload = params.m_p * (J_e.T @ J_e)
     
     return M_base + M_payload
 
@@ -34,18 +35,18 @@ def mass_matrix(theta):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def coriolis_matrix(theta):
+    from taylor_factors import get_all_dH
     dh = get_all_dH(theta)
     
     dM11_base = L**2 * m_b * dh[0] + L * I_b * dh[2] + L**2 * m_d * dh[4] + I_xx * dh[6]
     dM22_base = L**2 * m_b * dh[1] + L * I_b * dh[3] + L**2 * m_d * dh[5] + I_xx * dh[7]
     
-    # --- افزودن اثر بار بر ماتریس کوریولیس (با استفاده از مشتق‌گیری عددی) ---
     delta = 1e-5
     J_plus = jacobian_end_effector(theta + delta, 0.0, L)
-    M_p_plus = m_p * (J_plus.T @ J_plus)
+    M_p_plus = params.m_p * (J_plus.T @ J_plus)  # استفاده از params.m_p
     
     J_minus = jacobian_end_effector(theta - delta, 0.0, L)
-    M_p_minus = m_p * (J_minus.T @ J_minus)
+    M_p_minus = params.m_p * (J_minus.T @ J_minus)  # استفاده از params.m_p
     
     dM_p_dtheta = (M_p_plus - M_p_minus) / (2 * delta)
     
@@ -58,7 +59,6 @@ def coriolis_matrix(theta):
     
     return np.array([[C11,   0.0, C13],
                      [0.0,  C22,  0.0]])
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # STIFFNESS MATRIX K  — Eq. (23)
@@ -123,16 +123,12 @@ def damping_matrix():
                      [0.0,  B22]])
 
 def gravity_vector(theta):
-    """
-    بردار نیروی گرانش ناشی از جرم بار متصل به انتهای ربات.
-    G = [∂U_g/∂θ, ∂U_g/∂φ]^T
-    """
     eps = 1e-10
     if np.abs(theta) < eps:
         dUg_dtheta = 0.0
     else:
-        # مشتق انرژی پتانسیل گرانشی (m_p * g * z_e) نسبت به تتا
-        dUg_dtheta = m_p * g * L * (theta * np.cos(theta) - np.sin(theta)) / (theta**2)
+        # استفاده از params.m_p و params.g
+        dUg_dtheta = params.m_p * params.g * L * (theta * np.cos(theta) - np.sin(theta)) / (theta**2)
         
     return np.array([dUg_dtheta, 0.0])
 # ─────────────────────────────────────────────────────────────────────────────
