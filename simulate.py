@@ -164,7 +164,7 @@ def simulate_idr_example2():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BONUS: PID CONTROL (Fig. 14)
+# BONUS: PID CONTROL (Fig. 14) - FIXED WITH ANALYTIC DERIVATIVE
 # ─────────────────────────────────────────────────────────────────────────────
 
 class SimplePIDController:
@@ -175,15 +175,14 @@ class SimplePIDController:
         self.Ki = Ki
         self.Kd = Kd
         self.integral_error = 0.0
-        self.prev_error = 0.0
     
-    def update(self, error, dt):
-        """Compute control output for given error and time step."""
+    def update(self, error, derivative_error, dt):
+        """
+        Compute control output.
+        Using analytic derivative_error to avoid 'Derivative Kick' and chattering.
+        """
         self.integral_error += error * dt
-        derivative_error = (error - self.prev_error) / dt if dt > 0 else 0.0
-        
         output = self.Kp * error + self.Ki * self.integral_error + self.Kd * derivative_error
-        self.prev_error = error
         
         return output
 
@@ -197,29 +196,34 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01):
     from scipy.integrate import solve_ivp
     from dynamics import state_derivative
     
-    setpoint_rad = setpoint * np.pi / 180.0
+    # PID parameters from paper
     pid = SimplePIDController(Kp=2.8, Ki=0.004, Kd=0.38)
     
     t = np.arange(0, t_final, dt)
     state = np.array([1e-8, 0.0, 0.0, 0.0])  # [θ, φ, θ̇, φ̇]
     
     history = np.zeros((4, len(t)))
-    force_history = np.zeros((3, len(t)))  # ذخیره هر سه نیرو
+    force_history = np.zeros((3, len(t)))
     
     for i, current_t in enumerate(t):
         history[:, i] = state
         
-        # محاسبه خطای PID
-        error = setpoint_rad - state[0]
+        # ۱. محاسبه خطا بر حسب "درجه" (مطابق با فرضیات پنهان مقاله)
+        theta_deg = state[0] * 180.0 / np.pi
+        error_deg = setpoint - theta_deg
         
-        # فقط کابل 1 کشیده می‌شود
-        F1 = max(0.0, pid.update(error, dt)) 
+        # ۲. استفاده از مشتق تحلیلی دقیق برای جلوگیری از لگد مشتق‌گیر (Chattering)
+        # d(error)/dt = -d(theta)/dt
+        theta_dot_deg = state[2] * 180.0 / np.pi
+        error_dot_deg = -theta_dot_deg
+        
+        # ۳. دریافت نیروی کنترلی نرم و بدون نویز
+        F1 = max(0.0, pid.update(error_deg, error_dot_deg, dt)) 
         F2 = 0.0
         F3 = 0.0
         
         force_history[:, i] = [F1, F2, F3]
         
-        # تابع نیرو برای ارسال به حلگر
         def force_func(t_inner):
             return np.array([F1, F2])
         
