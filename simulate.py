@@ -229,10 +229,3 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01):
         state = sol.y[:, -1]
         
     return t, history, force_history
-        
-        # شبیه‌سازی دقیق گسسته (Digital Control Loop Hold)
-        if i < len(t_eval) - 1:
-            sol = solve_ivp(state_derivative_pid, [current_t, current_t + dt], state, method='RK45')
-            state = sol.y[:, -1]
-            
-    return t_eval, history, force_history
