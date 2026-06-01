@@ -476,7 +476,7 @@ def generate_all_plots(show=True, save=False):
 
     if save:
         print("\nSaving high-quality plots...")
-        save_dir = "figure"
+        save_dir = "figures"
         os.makedirs(save_dir, exist_ok=True)  # ساخت پوشه در صورت عدم وجود
         
         for fig_name, fig in figs.items():
