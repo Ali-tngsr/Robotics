@@ -375,49 +375,56 @@ def plot_pid_control():
     print("  Running PID Control simulation...")
     t, state_history, force_history = simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01)
     
-    # تبدیل رادیان به درجه برای رسم
+    # تبدیل رادیان به درجه برای رسم در نمودار
     theta_deg = state_history[0, :] * 180.0 / np.pi
     phi_deg = state_history[1, :] * 180.0 / np.pi
     
     F1 = force_history[0, :]
     
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+    # ایجاد 3 ساب‌پلات مجزا روی هم
+    fig, axes = plt.subplots(3, 1, figsize=(10, 11))
     
     # ----------------------------------------------------
-    # Subplot a: Dynamic responses for bending and orientation angles
+    # Subplot 1: Bending angle theta
     # ----------------------------------------------------
     axes[0].plot(t, theta_deg, 'k-', linewidth=2.5, label=r'Bending angle $\theta$')
-    axes[0].plot(t, phi_deg, 'b--', linewidth=2, label=r'Orientation angle $\phi$')
+    axes[0].axhline(y=15.53, color='r', linestyle='-.', linewidth=1.5, label=r'Target $\theta = 15.53^\circ$')
     
-    # خط‌چین قرمز برای نمایش زاویه هدف
-    axes[0].axhline(y=15.53, color='r', linestyle='-.', linewidth=1.5, label=r'Reference $\theta = 15.53^\circ$')
-    
-    axes[0].set_title("(a) Dynamic responses for the bending and orientation angles", fontsize=12)
-    axes[0].set_xlabel("Time (s)", fontsize=11)
-    axes[0].set_ylabel("Angle (degree)", fontsize=11)
-    axes[0].set_ylim([-2, 20])  # کادربندی برای نمایش بهتر
+    axes[0].set_title("Dynamic response for the bending angle", fontsize=11)
+    axes[0].set_ylabel("Angle (deg)", fontsize=11)
+    axes[0].set_ylim([-2, 20])
     axes[0].grid(True, alpha=0.5)
-    axes[0].legend(loc='lower right', fontsize=11)
+    axes[0].legend(loc='lower right', fontsize=10)
     
     # ----------------------------------------------------
-    # Subplot b: Temporal evolution of actuation force F1
+    # Subplot 2: Orientation angle phi
     # ----------------------------------------------------
-    axes[1].plot(t, F1, 'g-', linewidth=2.5, label='F1 (Cable 1 Tension)')
+    axes[1].plot(t, phi_deg, 'b-', linewidth=2.5, label=r'Orientation angle $\phi$')
+    axes[1].axhline(y=0.0, color='r', linestyle='-.', linewidth=1.5, label=r'Target $\phi = 0^\circ$')
     
-    # خط‌چین قرمز برای نمایش نیروی 5 نیوتن پایدار
-    axes[1].axhline(y=5.0, color='r', linestyle='-.', linewidth=1.5, label='Steady-state F1 = 5N')
-    
-    axes[1].set_title("(b) Temporal evolution of the actuation force", fontsize=12)
-    axes[1].set_xlabel("Time (s)", fontsize=11)
-    axes[1].set_ylabel("Force (N)", fontsize=11)
-    axes[1].set_ylim([-1, 10])
+    axes[1].set_title("Dynamic response for the orientation angle", fontsize=11)
+    axes[1].set_ylabel("Angle (deg)", fontsize=11)
+    axes[1].set_ylim([-1, 1])  # کادر محدودتر برای نشان دادن اینکه روی صفر ثابت است
     axes[1].grid(True, alpha=0.5)
-    axes[1].legend(loc='upper right', fontsize=11)
+    axes[1].legend(loc='upper right', fontsize=10)
     
-    plt.suptitle("Figure 14: PID Control Performance", fontsize=14, fontweight='bold')
+    # ----------------------------------------------------
+    # Subplot 3: Actuation force F1
+    # ----------------------------------------------------
+    axes[2].plot(t, F1, 'g-', linewidth=2.5, label='F1 (Cable 1 Tension)')
+    axes[2].axhline(y=5.0, color='r', linestyle='-.', linewidth=1.5, label='Target F1 = 5N')
+    
+    axes[2].set_title("Temporal evolution of the actuation force", fontsize=11)
+    axes[2].set_xlabel("Time (s)", fontsize=11)
+    axes[2].set_ylabel("Force (N)", fontsize=11)
+    axes[2].set_ylim([-1, 10])
+    axes[2].grid(True, alpha=0.5)
+    axes[2].legend(loc='upper right', fontsize=10)
+    
+    plt.suptitle("Figure 14: Dynamic responses in closed-loop with PID controller", 
+                 fontsize=13, fontweight='bold')
     plt.tight_layout()
     return fig
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN EXECUTION
