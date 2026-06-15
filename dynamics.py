@@ -3,19 +3,28 @@ PHASE 3–4: ENERGIES & EQUATIONS OF MOTION
 Kinetic energy T, Potential energy U, and dynamic model via Euler-Lagrange.
 
 Core: assemble M(θ), C(θ), K, D(θ,φ) and solve for accelerations.
+(Refactored: Dependency Injection for payload & Centralized Imports)
 """
 import numpy as np
-from taylor_factors import get_all_H, get_all_dH, H1, H2, H3, H4, H5, H6, H7, H8
-from params import L, m_b, m_d, I_b, I_xx, E
-import params
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IMPORTS 
+# ─────────────────────────────────────────────────────────────────────────────
+from taylor_factors import get_all_H, get_all_dH
 from kinematics import jacobian_end_effector
+
+# وارد کردن پارامترهای ثابت ربات (پایه)
+# توجه: m_p و g دیگر مستقیماً از params خوانده نمی‌شوند تا بتوان در شبیه‌سازی آن‌ها را به صورت متغیر تزریق کرد.
+from params import L, m_b, m_d, I_b, I_xx, E, r_cab
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MASS MATRIX M(θ)  — Eq. (21)
 # ─────────────────────────────────────────────────────────────────────────────
-
-def mass_matrix(theta):
-    from taylor_factors import get_all_H
+def mass_matrix(theta, m_p=0.0):
+    """
+    محاسبه ماتریس جرم با قابلیت دریافت جرم بار اضافی (m_p) به عنوان ورودی.
+    """
     h = get_all_H(theta)
     
     M11_base = L**2 * m_b * h[0] + L * I_b * h[2] + L**2 * m_d * h[4] + I_xx * h[6]
@@ -23,9 +32,9 @@ def mass_matrix(theta):
     M_base = np.array([[M11_base,  0.0],
                        [0.0, M22_base]])
     
-    # استفاده از params.m_p به صورت زنده
+    # اثر جرم بار اضافی
     J_e = jacobian_end_effector(theta, 0.0, L)
-    M_payload = params.m_p * (J_e.T @ J_e)
+    M_payload = m_p * (J_e.T @ J_e)
     
     return M_base + M_payload
 
@@ -33,9 +42,7 @@ def mass_matrix(theta):
 # ─────────────────────────────────────────────────────────────────────────────
 # CORIOLIS / CENTRIPETAL MATRIX C(θ)  — Eq. (22)
 # ─────────────────────────────────────────────────────────────────────────────
-
-def coriolis_matrix(theta):
-    from taylor_factors import get_all_dH
+def coriolis_matrix(theta, m_p=0.0):
     dh = get_all_dH(theta)
     
     dM11_base = L**2 * m_b * dh[0] + L * I_b * dh[2] + L**2 * m_d * dh[4] + I_xx * dh[6]
@@ -43,10 +50,10 @@ def coriolis_matrix(theta):
     
     delta = 1e-5
     J_plus = jacobian_end_effector(theta + delta, 0.0, L)
-    M_p_plus = params.m_p * (J_plus.T @ J_plus)  # استفاده از params.m_p
+    M_p_plus = m_p * (J_plus.T @ J_plus)
     
     J_minus = jacobian_end_effector(theta - delta, 0.0, L)
-    M_p_minus = params.m_p * (J_minus.T @ J_minus)  # استفاده از params.m_p
+    M_p_minus = m_p * (J_minus.T @ J_minus)
     
     dM_p_dtheta = (M_p_plus - M_p_minus) / (2 * delta)
     
@@ -60,16 +67,13 @@ def coriolis_matrix(theta):
     return np.array([[C11,   0.0, C13],
                      [0.0,  C22,  0.0]])
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # STIFFNESS MATRIX K  — Eq. (23)
 # ─────────────────────────────────────────────────────────────────────────────
-
 def stiffness_matrix():
     """
     2×2 elastic stiffness (K22 = 0 because no φ bending).
-    
-    K11 = E I_b / L
-    K22 = 0
     """
     K11 = E * I_b / L
     return np.array([[K11,  0.0],
@@ -77,22 +81,35 @@ def stiffness_matrix():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# DAMPING MATRIX B 
+# ─────────────────────────────────────────────────────────────────────────────
+def damping_matrix():
+    """
+    2x2 viscous damping matrix to replicate the settling time in the paper.
+    """
+    B11 = 0.002
+    B22 = 0.002
+    return np.array([[B11,  0.0],
+                     [0.0,  B22]])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GRAVITY VECTOR G(θ)
+# ─────────────────────────────────────────────────────────────────────────────
+def gravity_vector(theta, m_p=0.0, g=9.81):
+    eps = 1e-10
+    if np.abs(theta) < eps:
+        dUg_dtheta = 0.0
+    else:
+        dUg_dtheta = m_p * g * L * (theta * np.cos(theta) - np.sin(theta)) / (theta**2)
+        
+    return np.array([dUg_dtheta, 0.0])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # ACTUATION MAP D(θ,φ)  — Eq. (24)
 # ─────────────────────────────────────────────────────────────────────────────
-
 def force_matrix(theta, phi, r=None):
-    """
-    2×2 matrix D mapping cable tensions [F1, F2]^T to generalized forces [Q1, Q2]^T.
-    
-    Three cables fixed at γ1=0, γ2=2π/3, γ3=4π/3 from Eq. (19).
-    We control cables 1 and 2.
-    
-    D11 = r cos(γ1 - φ) = r cos(φ)
-    D12 = r cos(γ2 - φ) = r cos(2π/3 - φ)
-    D21 = -r θ sin(γ1 - φ) = -r θ sin(φ)
-    D22 =  r θ sin(γ2 - φ) = r θ sin(2π/3 - φ)
-    """
-    from params import r_cab
     if r is None:
         r = r_cab
     
@@ -107,35 +124,11 @@ def force_matrix(theta, phi, r=None):
     return np.array([[D11, D12],
                      [D21, D22]])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DAMPING MATRIX B (Added for physical realism and to match Fig. 8)
-# ─────────────────────────────────────────────────────────────────────────────
 
-def damping_matrix():
-    """
-    2x2 viscous damping matrix.
-    Since Eq 20 in the paper lacks a damping term, the theoretical system is conservative.
-    To replicate the ~37.68s decay seen in Fig. 8, a small structural damping is required.
-    """
-    B11 = 0.002  # Tuned to achieve ~37s settling time
-    B22 = 0.002
-    return np.array([[B11,  0.0],
-                     [0.0,  B22]])
-
-def gravity_vector(theta):
-    eps = 1e-10
-    if np.abs(theta) < eps:
-        dUg_dtheta = 0.0
-    else:
-        # استفاده از params.m_p و params.g
-        dUg_dtheta = params.m_p * params.g * L * (theta * np.cos(theta) - np.sin(theta)) / (theta**2)
-        
-    return np.array([dUg_dtheta, 0.0])
 # ─────────────────────────────────────────────────────────────────────────────
 # FULL EQUATIONS OF MOTION  — Eq. (20)
 # ─────────────────────────────────────────────────────────────────────────────
-
-def state_derivative(t, state, force_func):
+def state_derivative(t, state, force_func, m_p=0.0, g=9.81):
     theta, phi, theta_dot, phi_dot = state
     
     if abs(theta) < 1e-8:
@@ -143,18 +136,18 @@ def state_derivative(t, state, force_func):
     
     F = force_func(t)
     
-    M = mass_matrix(theta)
-    C = coriolis_matrix(theta)
+    M = mass_matrix(theta, m_p)
+    C = coriolis_matrix(theta, m_p)
     K = stiffness_matrix()
     D = force_matrix(theta, phi)
     B = damping_matrix()
-    G_vec = gravity_vector(theta)  # <--- محاسبه گرانش
+    G_vec = gravity_vector(theta, m_p, g)
     
     q = np.array([theta, phi])
     q_dot = np.array([theta_dot, phi_dot])
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    # در سمت راست معادله، G_vec از نیروها کم می‌شود
+    # بردار گرانش از نیروها کم می‌شود
     rhs = D @ F - C @ vel - K @ q - B @ q_dot - G_vec 
     
     try:
@@ -164,24 +157,23 @@ def state_derivative(t, state, force_func):
     
     return [theta_dot, phi_dot, q_ddot[0], q_ddot[1]]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# INVERSE DYNAMICS  — solve for F given trajectory
-# ─────────────────────────────────────────────────────────────────────────────
 
-def inverse_dynamics(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot):
-    M = mass_matrix(theta)
-    C = coriolis_matrix(theta)
+# ─────────────────────────────────────────────────────────────────────────────
+# INVERSE DYNAMICS (2 & 3 Cables)
+# ─────────────────────────────────────────────────────────────────────────────
+def inverse_dynamics(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot, m_p=0.0):
+    M = mass_matrix(theta, m_p)
+    C = coriolis_matrix(theta, m_p)
     K = stiffness_matrix()
     D = force_matrix(theta, phi)
-    B = damping_matrix()  # <--- اضافه شدن ماتریس میرایی
+    B = damping_matrix()
     
     q = np.array([theta, phi])
-    q_dot = np.array([theta_dot, phi_dot])  # <--- تعریف بردار سرعت
+    q_dot = np.array([theta_dot, phi_dot])
     q_ddot = np.array([theta_ddot, phi_ddot])
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    # D·F = M·q̈ + C·v + K·q + B·q̇
-    rhs = M @ q_ddot + C @ vel + K @ q + B @ q_dot  # <--- جمع با ترم میرایی
+    rhs = M @ q_ddot + C @ vel + K @ q + B @ q_dot
     
     if abs(np.linalg.det(D)) < 1e-10:
         F = np.linalg.lstsq(D, rhs, rcond=None)[0]
@@ -191,50 +183,9 @@ def inverse_dynamics(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot):
     return F
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# KINETIC & POTENTIAL ENERGY (for validation/analysis)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def total_kinetic_energy(theta, theta_dot, phi_dot):
-    """
-    Total kinetic energy T = T_backbone + T_disks (translational + rotational).
-    
-    From Eqs. (9), (14), (15), (16).
-    """
-    h = get_all_H(theta)
-    
-    # Backbone translational
-    Tb_trans = 0.5 * L**2 * m_b * (h[0] * theta_dot**2 + h[1] * phi_dot**2)
-    
-    # Backbone rotational
-    Tb_rot = 0.5 * L * I_b * (h[2] * theta_dot**2 + h[3] * phi_dot**2)
-    
-    # Disk translational
-    Td_trans = 0.5 * L**2 * m_d * (h[4] * theta_dot**2 + h[5] * phi_dot**2)
-    
-    # Disk rotational
-    Td_rot = 0.5 * I_xx * (h[6] * theta_dot**2 + h[7] * phi_dot**2)
-    
-    return Tb_trans + Tb_rot + Td_trans + Td_rot
-
-
-def total_potential_energy(theta):
-    """
-    Total potential energy U = elastic energy (gravity negligible, Eq. 18).
-    
-    U = (E I_b / 2L) θ²
-    """
-    return (E * I_b / (2 * L)) * theta**2
-
-
-def lagrangian(theta, theta_dot, phi_dot):
-    """L = T - U"""
-    T = total_kinetic_energy(theta, theta_dot, phi_dot)
-    U = total_potential_energy(theta)
-    return T - U
-def inverse_dynamics_3cables(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot):
-    M = mass_matrix(theta)
-    C = coriolis_matrix(theta)
+def inverse_dynamics_3cables(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddot, m_p=0.0):
+    M = mass_matrix(theta, m_p)
+    C = coriolis_matrix(theta, m_p)
     K = stiffness_matrix()
     B = damping_matrix()
     
@@ -243,11 +194,8 @@ def inverse_dynamics_3cables(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddo
     q_ddot = np.array([theta_ddot, phi_ddot])
     vel = np.array([theta_dot**2, theta_dot*phi_dot, phi_dot**2])
     
-    # سمت راست معادله (تولید گشتاور مورد نیاز)
     rhs = M @ q_ddot + C @ vel + K @ q + B @ q_dot  
     
-    # تشکیل ماتریس D برای 3 کابل (ابعاد 2x3)
-    from params import r_cab
     gam1, gam2, gam3 = 0.0, 2*np.pi/3, 4*np.pi/3
     
     D3 = np.array([
@@ -255,15 +203,34 @@ def inverse_dynamics_3cables(theta, phi, theta_dot, phi_dot, theta_ddot, phi_ddo
         [r_cab * theta * np.sin(gam1 - phi), r_cab * theta * np.sin(gam2 - phi), r_cab * theta * np.sin(gam3 - phi)]
     ])
     
-    # حل معادله برای یافتن نیروها با استفاده از شبه‌معکوس (Pseudo-inverse)
     F_base = np.linalg.pinv(D3) @ rhs
     
-    # تضمین اینکه نیروها همیشه کششی هستند (F >= 0)
-    # با افزودن کشش پایه (Pre-tension) در فضای پوچ ماتریس
     min_F = np.min(F_base)
     if min_F < 0:
-        F = F_base - min_F + 0.1  # اضافه کردن 0.1 نیوتن به عنوان حداقل کشش
+        F = F_base - min_F + 0.1
     else:
         F = F_base
         
     return F
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KINETIC & POTENTIAL ENERGY (for validation/analysis)
+# ─────────────────────────────────────────────────────────────────────────────
+def total_kinetic_energy(theta, theta_dot, phi_dot):
+    h = get_all_H(theta)
+    Tb_trans = 0.5 * L**2 * m_b * (h[0] * theta_dot**2 + h[1] * phi_dot**2)
+    Tb_rot = 0.5 * L * I_b * (h[2] * theta_dot**2 + h[3] * phi_dot**2)
+    Td_trans = 0.5 * L**2 * m_d * (h[4] * theta_dot**2 + h[5] * phi_dot**2)
+    Td_rot = 0.5 * I_xx * (h[6] * theta_dot**2 + h[7] * phi_dot**2)
+    return Tb_trans + Tb_rot + Td_trans + Td_rot
+
+
+def total_potential_energy(theta):
+    return (E * I_b / (2 * L)) * theta**2
+
+
+def lagrangian(theta, theta_dot, phi_dot):
+    T = total_kinetic_energy(theta, theta_dot, phi_dot)
+    U = total_potential_energy(theta)
+    return T - U
