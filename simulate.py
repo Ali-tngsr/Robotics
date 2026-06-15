@@ -194,5 +194,47 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01, m_p=0.0):
         sol = solve_ivp(state_derivative, [current_t, current_t + dt],
                        state, args=(force_func, m_p), method='RK45')
         state = sol.y[:, -1]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EXTENSION: SMC CONTROL (Robustness against Payload)
+# ─────────────────────────────────────────────────────────────────────────────
+def simulate_smc_control(setpoint=15.53, t_final=5.0, dt=0.01, m_p=0.0):
+    """
+    SMC control to reach bending angle setpoint.
+    Designed to handle non-linearities and payload (m_p) disturbances.
+    """
+    setpoint_rad = setpoint * np.pi / 180.0
+    smc = SMCController(lambda_c=8.0, K_s=15.0, epsilon=0.05)
+    
+    t = np.arange(0, t_final, dt)
+    state = np.array([1e-8, 0.0, 0.0, 0.0])  # [θ, φ, θ̇, φ̇]
+    
+    history = np.zeros((4, len(t)))
+    force_history = np.zeros((3, len(t)))
+    
+    F_feedforward = 5.0 
+    
+    for i, current_t in enumerate(t):
+        history[:, i] = state
+        
+        error = setpoint_rad - state[0]
+        error_dot = 0.0 - state[2]  # derivative of setpoint is 0
+        
+        smc_action = smc.update(error, error_dot)
+        
+        F1 = max(0.0, F_feedforward + smc_action) 
+        F2 = 0.0
+        F3 = 0.0
+        
+        force_history[:, i] = [F1, F2, F3]
+        
+        def force_func(t_inner):
+            return np.array([F1, F2])
+        
+        sol = solve_ivp(state_derivative, [current_t, current_t + dt],
+                       state, args=(force_func, m_p), method='RK45')
+        state = sol.y[:, -1]
+        
+    return t, history, force_history
         
     return t, history, force_history
