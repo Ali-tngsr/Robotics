@@ -19,6 +19,8 @@ from dynamics import state_derivative, inverse_dynamics_3cables
 # وارد کردن کنترلر از فایل مستقل
 from pid_controller import SimplePIDController
 
+from smc_controller import SMCController
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. STATIC EQUILIBRIUM (Fig. 8)
