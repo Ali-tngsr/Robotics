@@ -18,11 +18,13 @@ from params import L
 from simulate import (simulate_pid_control, simulate_smc_control, 
                       simulate_fdr_example2, simulate_idr_example1)
 
-def generate_paper_novelty_plots(m_p_load=0.150):
+import os
+
+def generate_paper_novelty_plots(m_p_load=0.150, show=True, save=False):
     dt = 0.01
     t_final_ctrl = 10.0
     setpoint = 15.53
-    
+
     print("\n" + "="*60)
     print(f" GENERATING NOVELTY PLOTS FOR PAPER (Payload = {int(m_p_load*1000)}g)")
     print("="*60)
@@ -230,9 +232,60 @@ def generate_paper_novelty_plots(m_p_load=0.150):
     figF.subplots_adjust(bottom=0.2) # Make room for legend
     figF.tight_layout()
 
-    print("\n✓ All 6 Novelty Figures generated successfully in Paper-Style Layout!")
-    print("Close the plot windows to proceed.")
-    plt.show()
+    # ==========================================
+    # Collect Figures
+    # ==========================================
+    figs = {
+        'figA_pid_failure': figA,
+        'figB_smc_robustness': figB,
+        'figC_control_effort': figC,
+        'figD_ise_comparison': figD,
+        'figE_fdr_workspace_sagging': figE,
+        'figF_idr_actuation_cost': figF,
+    }
+
+    # ==========================================
+    # Save Figures
+    # ==========================================
+    if save:
+        print("\nSaving high-quality plots...")
+
+        save_dir = os.path.join(
+            "figures",
+            f"payload_{int(m_p_load*1000)}g"
+        )
+
+        os.makedirs(save_dir, exist_ok=True)
+
+        for fig_name, fig in figs.items():
+            if fig is not None:
+                filepath = os.path.join(save_dir, f"{fig_name}.png")
+
+                fig.savefig(
+                    filepath,
+                    dpi=300,
+                    bbox_inches='tight',
+                    format='png'
+                )
+
+                print(f"  -> Saved: {filepath}")
+
+    # ==========================================
+    # Show Figures
+    # ==========================================
+    if show:
+        plt.show()
+
+    print("\n" + "="*60)
+    print("✓ All 6 Novelty Figures generated successfully!")
+    print("="*60)
+
+    return figs
 
 if __name__ == '__main__':
-    generate_paper_novelty_plots(m_p_load=0.020)
+
+    generate_paper_novelty_plots(
+        m_p_load=0.050,
+        show=True,
+        save=True
+    )

@@ -163,7 +163,7 @@ def main():
         print("Running Phase 5+ figures (this may take a few moments)...")
         
         # اجرای شبیه‌سازی اصلی و رسم نمودارها
-        generate_all_plots(show=True, save=False)
+        generate_all_plots(show=True, save=True)
         return 0
         
     except Exception as e:
