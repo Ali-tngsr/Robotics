@@ -7,6 +7,42 @@ Linear & Angular velocities (Eqs. 3-4).
 """
 import numpy as np
 
+from params import L
+
+def get_jacobian(theta, phi):
+    """
+    محاسبه ماتریس ژاکوبین (Jacobian) برای نقطه انتهایی ربات (End-Effector)
+    J = [dx/dtheta, dx/dphi]
+        [dy/dtheta, dy/dphi]
+        [dz/dtheta, dz/dphi]
+    """
+    # جلوگیری از خطای تکینگی (Singularity) در نزدیکی زاویه صفر
+    if abs(theta) < 1e-3:
+        # استفاده از بسط تیلور (مطابق با محاسبات تحلیلی Day 5)
+        J_theta = np.array([
+            (L / 2) * np.cos(phi),
+            (L / 2) * np.sin(phi),
+            0.0
+        ])
+        J_phi = np.array([0.0, 0.0, 0.0])
+    else:
+        # مشتقات تحلیلی دقیق برای تتا > 0
+        
+        # 1. مشتقات نسبت به زاویه خمش (theta)
+        dx_dtheta = L * ((theta * np.sin(theta) - 1 + np.cos(theta)) / (theta**2)) * np.cos(phi)
+        dy_dtheta = L * ((theta * np.sin(theta) - 1 + np.cos(theta)) / (theta**2)) * np.sin(phi)
+        dz_dtheta = L * ((theta * np.cos(theta) - np.sin(theta)) / (theta**2))
+        J_theta = np.array([dx_dtheta, dy_dtheta, dz_dtheta])
+
+        # 2. مشتقات نسبت به زاویه جهت‌گیری (phi)
+        dx_dphi = -L * ((1 - np.cos(theta)) / theta) * np.sin(phi)
+        dy_dphi = L * ((1 - np.cos(theta)) / theta) * np.cos(phi)
+        dz_dphi = 0.0
+        J_phi = np.array([dx_dphi, dy_dphi, dz_dphi])
+
+    # ترکیب ستون‌ها برای ساخت ماتریس ژاکوبین 3 در 2
+    J = np.column_stack((J_theta, J_phi))
+    return J
 
 def position(s, theta, phi, L):
     """
