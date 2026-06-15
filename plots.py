@@ -1,49 +1,51 @@
 """
 PLOTTING MODULE
 Generate validation plots against paper figures.
+Supports dynamic payload injection (m_p) for comparison.
+(Refactored: Centralized imports, fixed duplicates, added m_p support)
 """
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import numpy as np
-import os  # این خط را در بالای فایل هم می‌توانید بگذارید
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PUBLICATION-QUALITY PLOT SETTINGS (LaTeX Style)
+# IMPORTS FROM PROJECT MODULES
 # ─────────────────────────────────────────────────────────────────────────────
-# استفاده از فونت‌های استاندارد مقالات (Computer Modern)
-mpl.rcParams['mathtext.fontset'] = 'cm'
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Computer Modern Roman', 'Times New Roman', 'DejaVu Serif']
-
-# اگر روی سیستم خود توزیع LaTeX (مثل TeXLive یا MiKTeX) نصب دارید، 
-# می‌توانید خط زیر را از حالت کامنت خارج کنید تا رندر کاملاً واقعی شود:
-# mpl.rcParams['text.usetex'] = True 
-
-# تنظیم سایز استاندارد برای متون
-mpl.rcParams['axes.titlesize'] = 12
-mpl.rcParams['axes.labelsize'] = 11
-mpl.rcParams['legend.fontsize'] = 10
-mpl.rcParams['xtick.labelsize'] = 10
-mpl.rcParams['ytick.labelsize'] = 10
 from params import L, THETA_MAX
 from taylor_factors import (H1, H2, H3, H4, H5, H6, H7, H8,
                             _H1_exact, _H1_taylor, _H2_exact, _H2_taylor,
                             _H3_exact, _H3_taylor, _H4_exact, _H4_taylor)
-from dynamics import (total_kinetic_energy, total_potential_energy,
-                     mass_matrix, force_matrix)
+from dynamics import total_kinetic_energy, total_potential_energy, mass_matrix, force_matrix
 from simulate import (simulate_static_equilibrium, simulate_fdr_example1,
                      simulate_fdr_example2, simulate_idr_example1,
                      simulate_idr_example2, simulate_pid_control)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLICATION-QUALITY PLOT SETTINGS (LaTeX Style)
+# ─────────────────────────────────────────────────────────────────────────────
+mpl.rcParams['mathtext.fontset'] = 'cm'
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = ['Computer Modern Roman', 'Times New Roman', 'DejaVu Serif']
+
+# mpl.rcParams['text.usetex'] = True  # در صورت داشتن LaTeX روی سیستم فعال کنید
+
+mpl.rcParams['axes.titlesize'] = 12
+mpl.rcParams['axes.labelsize'] = 11
+mpl.rcParams['legend.fontsize'] = 10
+mpl.rcParams['xtick.labelsize'] = 10
+mpl.rcParams['ytick.labelsize'] = 10
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PLOT FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
 def plot_H1_H2_comparison():
-    """
-    Figure 2: Exact vs Taylor expansion of H1, H2 and errors.
-    """
+    """Figure 2: Exact vs Taylor expansion of H1, H2 and errors."""
     theta_vals = np.linspace(1e-4, THETA_MAX, 500)
     
-    # Compute exact and Taylor
     h1_exact = np.array([_H1_exact(t) for t in theta_vals])
     h1_taylor = np.array([_H1_taylor(t) for t in theta_vals])
     h1_error = h1_exact - h1_taylor
@@ -54,27 +56,23 @@ def plot_H1_H2_comparison():
     
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     
-    # H1 value
     axes[0, 0].plot(theta_vals, h1_exact, 'r-', linewidth=2.5, label='Exact')
     axes[0, 0].plot(theta_vals, h1_taylor, 'b-', linewidth=2.5, label='Taylor')
     axes[0, 0].set_ylabel('Values of H₁', fontsize=11)
     axes[0, 0].legend(fontsize=10)
     axes[0, 0].grid(True, alpha=0.3)
     
-    # H1 error
     axes[1, 0].plot(theta_vals, h1_error, 'k-', linewidth=2)
     axes[1, 0].set_ylabel('Error', fontsize=11)
     axes[1, 0].set_xlabel('Bending angle θ (rad)', fontsize=11)
     axes[1, 0].grid(True, alpha=0.3)
     
-    # H2 value
     axes[0, 1].plot(theta_vals, h2_exact, 'r-', linewidth=2.5, label='Exact')
     axes[0, 1].plot(theta_vals, h2_taylor, 'b-', linewidth=2.5, label='Taylor')
     axes[0, 1].set_ylabel('Values of H₂', fontsize=11)
     axes[0, 1].legend(fontsize=10)
     axes[0, 1].grid(True, alpha=0.3)
     
-    # H2 error
     axes[1, 1].plot(theta_vals, h2_error, 'k-', linewidth=2)
     axes[1, 1].set_ylabel('Error', fontsize=11)
     axes[1, 1].set_xlabel('Bending angle θ (rad)', fontsize=11)
@@ -126,10 +124,10 @@ def plot_H3_H4_comparison():
     return fig
 
 
-def plot_static_equilibrium():
+def plot_static_equilibrium(m_p=0.0):
     """Figure 8: Static equilibrium response."""
-    print("  Running static equilibrium simulation...")
-    t, y = simulate_static_equilibrium(t_final=40, num_points=1000)
+    print(f"  Running static equilibrium simulation (m_p={m_p})...")
+    t, y = simulate_static_equilibrium(t_final=40, num_points=1000, m_p=m_p)
     
     theta_deg = y[0] * 180 / np.pi
     phi_deg = y[1] * 180 / np.pi
@@ -147,16 +145,16 @@ def plot_static_equilibrium():
     ax2.set_xlabel('Time (sec)', fontsize=11)
     ax2.grid(True, alpha=0.3)
     
-    plt.suptitle('Figure 8: Static Equilibrium (θ₀=π/4, φ₀=0, F=0)', 
+    plt.suptitle(f'Figure 8: Static Equilibrium (θ₀=π/4, F=0) | Payload: {m_p} kg', 
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     return fig
 
 
-def plot_fdr_example1():
+def plot_fdr_example1(m_p=0.0):
     """Figure 9: Forward dynamics response (5N on cable 1)."""
-    print("  Running FDR Example 1 simulation...")
-    t, y = simulate_fdr_example1(t_final=40, F1=5.0)
+    print(f"  Running FDR Example 1 simulation (m_p={m_p})...")
+    t, y = simulate_fdr_example1(t_final=40, F1=5.0, m_p=m_p)
     
     theta_deg = y[0] * 180 / np.pi
     phi_deg = y[1] * 180 / np.pi
@@ -166,126 +164,31 @@ def plot_fdr_example1():
     ax1.plot(t, theta_deg, 'b-', linewidth=1.5)
     ax1.set_ylabel('θ (degrees)', fontsize=11)
     ax1.grid(True, alpha=0.3)
-    ax1.axhline(15.53, color='g', linestyle='--', linewidth=2, alpha=0.7, label='Expected: 15.53°')
-    ax1.legend(fontsize=9)
+    
+    # خط مرجع مقاله (بدون بار)
+    if m_p == 0.0:
+        ax1.axhline(15.53, color='g', linestyle='--', linewidth=2, alpha=0.7, label='Expected Baseline: 15.53°')
+        ax1.legend(fontsize=9)
     
     ax2.plot(t, phi_deg, 'r-', linewidth=1.5)
     ax2.set_ylabel('φ (degrees)', fontsize=11)
     ax2.set_xlabel('Time (sec)', fontsize=11)
     ax2.grid(True, alpha=0.3)
     
-    plt.suptitle('Figure 9: FDR Example 1 (F₁=5N, F₂=0N)', 
+    plt.suptitle(f'Figure 9: FDR Example 1 (F₁=5N) | Payload: {m_p} kg', 
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     return fig
 
 
-def plot_fdr_example2():
-    """Figure 10: Forward dynamics with varying forces."""
-    print("  Running FDR Example 2 simulation...")
-    t, y = simulate_fdr_example2(t_final=10)
+def plot_fdr_example2(m_p=0.0):
+    """Figure 10: Forward dynamics with varying forces & Cartesian coords."""
+    print(f"  Running FDR Example 2 simulation (m_p={m_p})...")
+    t, state, F1_vals, F2_vals, F3_vals = simulate_fdr_example2(t_final=10.0, m_p=m_p)
     
-    # Extract end-effector position from final state
-    theta_final = y[0, -1]
-    phi_final = y[1, -1]
-    
-    theta_deg = y[0] * 180 / np.pi
-    phi_deg = y[1] * 180 / np.pi
-    
-    fig, axes = plt.subplots(2, 1, figsize=(11, 8))
-    
-    # Forces input
-    F1_input = 3.5 * t
-    axes[0].plot(t, F1_input, 'r-', linewidth=2, label='F₁')
-    axes[0].axhline(0, color='b', linestyle='--', linewidth=1.5, label='F₂=0')
-    axes[0].set_ylabel('Cable Force (N)', fontsize=11)
-    axes[0].set_xlabel('Time (sec)', fontsize=11)
-    axes[0].legend(fontsize=10)
-    axes[0].grid(True, alpha=0.3)
-    axes[0].set_title('(a) Temporal evolution of cable tensions', fontsize=11)
-    
-    # Angles
-    axes[1].plot(t, theta_deg, 'b-', linewidth=2, label='θ')
-    ax1_twin = axes[1].twinx()
-    ax1_twin.plot(t, phi_deg, 'r-', linewidth=2, label='φ')
-    axes[1].set_ylabel('θ (degrees)', fontsize=11, color='b')
-    ax1_twin.set_ylabel('φ (degrees)', fontsize=11, color='r')
-    axes[1].set_xlabel('Time (sec)', fontsize=11)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].set_title('(b) Bending and orientation angles', fontsize=11)
-    
-    plt.suptitle('Figure 10: FDR Example 2 (Varying Forces)', 
-                 fontsize=13, fontweight='bold')
-    plt.tight_layout()
-    return fig
-
-
-def plot_idr_example1():
-    from simulate import simulate_idr_example1
-    from params import L
-    import matplotlib.pyplot as plt
-    import numpy as np
-    
-    print("  Running IDR Example 1 simulation...")
-    t, theta_d, phi_d, F_req = simulate_idr_example1()
-    
-    fig = plt.figure(figsize=(13, 6))
-    
-    # ----------------------------------------------------
-    # Subplot a: 3D Workspace (Desired Path)
-    # ----------------------------------------------------
-    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
-    
-    X = np.zeros_like(theta_d)
-    Y = np.zeros_like(theta_d)
-    Z = np.zeros_like(theta_d)
-    
-    # محاسبه مختصات فضایی (X, Y, Z) نوک ربات در میلی‌متر
-    for i in range(len(theta_d)):
-        th = theta_d[i]
-        ph = phi_d[i]
-        if abs(th) < 1e-6:
-            X[i], Y[i], Z[i] = 0.0, 0.0, L * 1000.0
-        else:
-            X[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
-            Y[i] = (L / th) * (1 - np.cos(th)) * np.sin(ph) * 1000.0
-            Z[i] = (L / th) * np.sin(th) * 1000.0
-            
-    ax1.plot(X, Y, Z, 'b-', linewidth=2.5)
-    ax1.set_title("(a) Desired path plotted on 2-DOF CDCR's workspace")
-    ax1.set_xlabel("X (mm)")
-    ax1.set_ylabel("Y (mm)")
-    ax1.set_zlabel("Z (mm)")
-    
-    # تنظیم ابعاد کادر برای اینکه دایره کاملا واضح و متناسب دیده شود
-    ax1.set_xlim([-150, 150])
-    ax1.set_ylim([-150, 150])
-    # Z حدودا روی 793 میلی متر در نوسان است، بنابراین کادر را محدود می‌کنیم:
-    ax1.set_zlim([750, 800]) 
-    
-    # ----------------------------------------------------
-    # Subplot b: Temporal evolution of actuation forces
-    # ----------------------------------------------------
-    ax2 = fig.add_subplot(1, 2, 2)
-    ax2.plot(t, F_req[0], 'k-', linewidth=1.5, label='F1')
-    ax2.plot(t, F_req[1], 'b--', linewidth=1.5, label='F2')
-    ax2.plot(t, F_req[2], 'r-.', linewidth=1.5, label='F3')
-    
-    ax2.set_title("(b) Temporal evolution of the actuation forces")
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Tension (N)")
-    ax2.grid(True)
-    ax2.legend()
-    
-    plt.tight_layout()
-    return fig
-
-
-def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
     theta = state[0, :]
     phi = state[1, :]
     
-    # 1. محاسبه مختصات دکارتی نقطه انتهایی (سینماتیک مستقیم - معادله 1)
     X_mm = np.zeros_like(theta)
     Z_mm = np.zeros_like(theta)
     
@@ -294,15 +197,13 @@ def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
         ph = phi[i]
         if abs(th) < 1e-6:
             X_mm[i] = 0.0
-            Z_mm[i] = L * 1000.0  # تبدیل متر به میلی‌متر
+            Z_mm[i] = L * 1000.0
         else:
             X_mm[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
             Z_mm[i] = (L / th) * np.sin(th) * 1000.0
 
-    # 2. رسم دقیقاً مطابق قالب مقاله
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
     
-    # Subfig 1: Temporal evolution of cable tensions
     ax1.plot(t, F1_vals, 'k-', linewidth=1.5, label='F1')
     ax1.plot(t, F2_vals, 'b--', linewidth=1.5, label='F2')
     ax1.plot(t, F3_vals, 'r-.', linewidth=1.5, label='F3')
@@ -312,39 +213,26 @@ def plot_fdr_example2(t, state, F1_vals, F2_vals, F3_vals):
     ax1.grid(True)
     ax1.legend()
     
-    # Subfig 2: Cartesian coordinates
     ax2.plot(X_mm, Z_mm, 'k-', linewidth=2)
     ax2.set_title("Cartesian coordinates of the end-point")
     ax2.set_xlabel("X (mm)")
     ax2.set_ylabel("Z (mm)")
     
-    # اعمال دقیق لیمیت‌های درخواستی شما
     ax2.set_xlim([0, 600])
     ax2.set_ylim([380, 830]) 
-    
-    # نکته: اگر می‌خواهید خط حرکت 5 نیوتنی را ببینید، خط بالا را کامنت کنید 
-    # و به جای آن از کد زیر استفاده کنید:
-    # ax2.set_ylim([750, 810])
-    
     ax2.grid(True)
+    
+    plt.suptitle(f'Figure 10: FDR Example 2 (Varying Forces) | Payload: {m_p} kg', fontweight='bold')
     plt.tight_layout()
-    plt.show()
     return fig
 
-def plot_idr_example2():
-    from simulate import simulate_idr_example2
-    from params import L
-    import matplotlib.pyplot as plt
-    import numpy as np
-    
-    print("  Running IDR Example 2 simulation...")
-    t, theta_d, phi_d, F_req = simulate_idr_example2()
+
+def plot_idr_example1(m_p=0.0):
+    """Figure 12: Inverse Dynamics - Circular Path."""
+    print(f"  Running IDR Example 1 simulation (m_p={m_p})...")
+    t, theta_d, phi_d, F_req = simulate_idr_example1(m_p=m_p)
     
     fig = plt.figure(figsize=(13, 6))
-    
-    # ----------------------------------------------------
-    # Subplot a: 3D Workspace (Desired Linear Path)
-    # ----------------------------------------------------
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
     
     X = np.zeros_like(theta_d)
@@ -362,19 +250,15 @@ def plot_idr_example2():
             Z[i] = (L / th) * np.sin(th) * 1000.0
             
     ax1.plot(X, Y, Z, 'b-', linewidth=2.5)
-    ax1.set_title("(a) Desired linear path on 2-DOF CDCR's workspace")
+    ax1.set_title("(a) Desired path on CDCR workspace")
     ax1.set_xlabel("X (mm)")
     ax1.set_ylabel("Y (mm)")
     ax1.set_zlabel("Z (mm)")
     
-    # تنظیم ابعاد کادر برای مسیر خطی
-    ax1.set_xlim([0, 300])
-    ax1.set_ylim([0, 300])
-    ax1.set_zlim([700, 850])
+    ax1.set_xlim([-150, 150])
+    ax1.set_ylim([-150, 150])
+    ax1.set_zlim([750, 800]) 
     
-    # ----------------------------------------------------
-    # Subplot b: Temporal evolution of actuation forces
-    # ----------------------------------------------------
     ax2 = fig.add_subplot(1, 2, 2)
     ax2.plot(t, F_req[0], 'k-', linewidth=1.5, label='F1')
     ax2.plot(t, F_req[1], 'b--', linewidth=1.5, label='F2')
@@ -386,16 +270,63 @@ def plot_idr_example2():
     ax2.grid(True)
     ax2.legend()
     
+    plt.suptitle(f'Figure 12: Inverse Dynamics (Circular) | Payload: {m_p} kg', fontweight='bold')
     plt.tight_layout()
     return fig
-  
-def plot_pid_control():
-    from simulate import simulate_pid_control
-    import matplotlib.pyplot as plt
-    import numpy as np
+
+
+def plot_idr_example2(m_p=0.0):
+    """Figure 13: Inverse Dynamics - Linear Path."""
+    print(f"  Running IDR Example 2 simulation (m_p={m_p})...")
+    t, theta_d, phi_d, F_req = simulate_idr_example2(m_p=m_p)
     
-    print("  Running PID Control simulation...")
-    t, state_history, force_history = simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01)
+    fig = plt.figure(figsize=(13, 6))
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+    
+    X = np.zeros_like(theta_d)
+    Y = np.zeros_like(theta_d)
+    Z = np.zeros_like(theta_d)
+    
+    for i in range(len(theta_d)):
+        th = theta_d[i]
+        ph = phi_d[i]
+        if abs(th) < 1e-6:
+            X[i], Y[i], Z[i] = 0.0, 0.0, L * 1000.0
+        else:
+            X[i] = (L / th) * (1 - np.cos(th)) * np.cos(ph) * 1000.0
+            Y[i] = (L / th) * (1 - np.cos(th)) * np.sin(ph) * 1000.0
+            Z[i] = (L / th) * np.sin(th) * 1000.0
+            
+    ax1.plot(X, Y, Z, 'b-', linewidth=2.5)
+    ax1.set_title("(a) Desired linear path on CDCR workspace")
+    ax1.set_xlabel("X (mm)")
+    ax1.set_ylabel("Y (mm)")
+    ax1.set_zlabel("Z (mm)")
+    
+    ax1.set_xlim([0, 300])
+    ax1.set_ylim([0, 300])
+    ax1.set_zlim([700, 850])
+    
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.plot(t, F_req[0], 'k-', linewidth=1.5, label='F1')
+    ax2.plot(t, F_req[1], 'b--', linewidth=1.5, label='F2')
+    ax2.plot(t, F_req[2], 'r-.', linewidth=1.5, label='F3')
+    
+    ax2.set_title("(b) Temporal evolution of actuation forces")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Tension (N)")
+    ax2.grid(True)
+    ax2.legend()
+    
+    plt.suptitle(f'Figure 13: Inverse Dynamics (Linear) | Payload: {m_p} kg', fontweight='bold')
+    plt.tight_layout()
+    return fig
+
+
+def plot_pid_control(m_p=0.0):
+    """Figure 14: PID Control Response."""
+    print(f"  Running PID Control simulation (m_p={m_p})...")
+    t, state_history, force_history = simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01, m_p=m_p)
     
     theta_deg = state_history[0, :] * 180.0 / np.pi
     phi_deg = state_history[1, :] * 180.0 / np.pi
@@ -408,7 +339,7 @@ def plot_pid_control():
     axes[0].axhline(y=15.53, color='r', linestyle='--', linewidth=1.5, label=r'Target $\theta_{ref} = 15.53^\circ$')
     axes[0].set_title(r"Dynamic response for the bending angle $\theta$", fontweight='bold')
     axes[0].set_ylabel(r"Angle $(^\circ)$")
-    axes[0].set_ylim([0, 18])  # بازه دقیق‌تر و زیباتر
+    axes[0].set_ylim([0, 18]) 
     axes[0].set_xlim([0, 5])
     axes[0].grid(True, linestyle=':', alpha=0.7)
     axes[0].legend(loc='lower right')
@@ -418,32 +349,35 @@ def plot_pid_control():
     axes[1].axhline(y=0.0, color='r', linestyle='--', linewidth=1.5, label=r'Target $\phi_{ref} = 0^\circ$')
     axes[1].set_title(r"Dynamic response for the orientation angle $\phi$", fontweight='bold')
     axes[1].set_ylabel(r"Angle $(^\circ)$")
-    axes[1].set_ylim([-0.5, 0.5]) # زوم روی صفر برای نشان دادن پایداری مطلق
+    axes[1].set_ylim([-0.5, 0.5]) 
     axes[1].set_xlim([0, 5])
     axes[1].grid(True, linestyle=':', alpha=0.7)
     axes[1].legend(loc='upper right')
     
     # --- Subplot 3: Force F1 ---
     axes[2].plot(t, F1, 'g-', linewidth=2, label=r'Actuation Force $F_1(t)$')
-    axes[2].axhline(y=5.0, color='r', linestyle='--', linewidth=1.5, label=r'Steady-state $F_{ss} = 5$ N')
+    axes[2].axhline(y=5.0, color='r', linestyle='--', linewidth=1.5, label=r'Steady-state $F_{ss} \approx 5$ N')
     axes[2].set_title(r"Temporal evolution of the actuation force $F_1$", fontweight='bold')
     axes[2].set_xlabel(r"Time (s)")
     axes[2].set_ylabel(r"Force (N)")
-    axes[2].set_ylim([0, 8]) # بازه مناسب برای نمایش اورشوت اولیه و رسیدن به 5
+    axes[2].set_ylim([0, 8]) 
     axes[2].set_xlim([0, 5])
     axes[2].grid(True, linestyle=':', alpha=0.7)
     axes[2].legend(loc='upper right')
     
+    plt.suptitle(f'Figure 14: PID Control Response | Payload: {m_p} kg', fontsize=13, fontweight='bold')
     plt.tight_layout()
     return fig
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN EXECUTION
 # ─────────────────────────────────────────────────────────────────────────────
 
-def generate_all_plots(show=True, save=False):
-    """Generate and optionally display/save all figures."""
+def generate_all_plots(show=True, save=False, m_p=0.0):
+    """Generate and optionally display/save all figures for a given payload (m_p)."""
     print("\n" + "="*70)
-    print("PHASE 5+ VALIDATION: Generating Figures from Amouri et al. 2020")
+    print(f"PHASE 5+ VALIDATION: Generating Figures (m_p = {m_p} kg)")
     print("="*70 + "\n")
     
     figs = {}
@@ -455,39 +389,34 @@ def generate_all_plots(show=True, save=False):
     figs['fig03_H3_H4'] = plot_H3_H4_comparison()
     
     print("Figure 8 (Static Equilibrium)...")
-    figs['fig08_static_equilibrium'] = plot_static_equilibrium()
+    figs['fig08_static_equilibrium'] = plot_static_equilibrium(m_p=m_p)
     
     print("Figure 9 (FDR Example 1)...")
-    figs['fig09_fdr_example1.'] = plot_fdr_example1()
+    figs['fig09_fdr_example1'] = plot_fdr_example1(m_p=m_p)
     
     print("Figure 10 (FDR Example 2)...")
-    t_fdr2, state_fdr2, f1, f2, f3 = simulate_fdr_example2()
-    figs['fig10_fdr_example2'] = plot_fdr_example2(t_fdr2, state_fdr2, f1, f2, f3)
+    figs['fig10_fdr_example2'] = plot_fdr_example2(m_p=m_p)
     
     print("Figure 12 (IDR Example 1)...")
-    figs['fig12_idr_example1'] = plot_idr_example1()
+    figs['fig12_idr_example1'] = plot_idr_example1(m_p=m_p)
     
     print("Figure 13 (IDR Example 2)...")
-    figs['fig13_idr_example2'] = plot_idr_example2()
+    figs['fig13_idr_example2'] = plot_idr_example2(m_p=m_p)
     
     print("Figure 14 (PID Control)...")
-    figs['fig14_pid_control'] = plot_pid_control()
+    figs['fig14_pid_control'] = plot_pid_control(m_p=m_p)
     
-
     if save:
         print("\nSaving high-quality plots...")
-        save_dir = "figures"
-        os.makedirs(save_dir, exist_ok=True)  # ساخت پوشه در صورت عدم وجود
+        # ساخت یک ساب‌فولدر بر اساس وزن برای جلوگیری از تداخل عکس‌ها
+        save_dir = os.path.join("figures", f"payload_{int(m_p*1000)}g")
+        os.makedirs(save_dir, exist_ok=True)
         
         for fig_name, fig in figs.items():
             if fig is not None:
                 filepath = os.path.join(save_dir, f"{fig_name}.png")
-                # ذخیره با کیفیت 300 DPI و حذف حاشیه‌های سفید اضافی (tight)
                 fig.savefig(filepath, dpi=300, bbox_inches='tight', format='png')
                 print(f"  -> Saved: {filepath}")
-                
-                # اگر فرمت وکتور (PDF) برای لتکس هم می‌خواهید، می‌توانید خط زیر را هم اضافه کنید:
-                # fig.savefig(filepath.replace('.png', '.pdf'), bbox_inches='tight', format='pdf')
 
     if show:
         plt.show()
@@ -500,4 +429,5 @@ def generate_all_plots(show=True, save=False):
 
 
 if __name__ == '__main__':
-    figs = generate_all_plots(show=True, save=True)
+    # در حالت دیفالت ربات بدون بار را رسم می‌کند
+    figs = generate_all_plots(show=True, save=True, m_p=0.0)
