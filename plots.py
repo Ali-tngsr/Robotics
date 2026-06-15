@@ -56,13 +56,13 @@ def plot_H1_H2_comparison():
     
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
     
-    axes[0, 0].plot(theta_vals, h1_exact, 'r-', linewidth=2.5, label='Exact')
+    axes[0, 0].plot(theta_vals[1:], h1_exact[1:], 'r-', linewidth=4, label='Exact')
     axes[0, 0].plot(theta_vals, h1_taylor, 'b-', linewidth=2.5, label='Taylor')
     axes[0, 0].set_ylabel('Values of H₁', fontsize=11)
     axes[0, 0].legend(fontsize=10)
     axes[0, 0].grid(True, alpha=0.3)
     
-    axes[1, 0].plot(theta_vals, h1_error, 'k-', linewidth=2)
+    axes[1, 0].plot(theta_vals[1:], h1_error[1:], 'k-', linewidth=2)
     axes[1, 0].set_ylabel('Error', fontsize=11)
     axes[1, 0].set_xlabel('Bending angle θ (rad)', fontsize=11)
     axes[1, 0].grid(True, alpha=0.3)
@@ -137,13 +137,16 @@ def plot_static_equilibrium(m_p=0.0):
     ax1.plot(t, theta_deg, 'b-', linewidth=1.5)
     ax1.set_ylabel('θ (degrees)', fontsize=11)
     ax1.grid(True, alpha=0.3)
-    ax1.set_ylim(-60, 60)
+    ax1.set_ylim(-45, 45)
+    ax1.set_xlim(0, 40)
     ax1.axhline(0, color='k', linestyle='--', alpha=0.3)
     
     ax2.plot(t, phi_deg, 'r-', linewidth=1.5)
     ax2.set_ylabel('φ (degrees)', fontsize=11)
     ax2.set_xlabel('Time (sec)', fontsize=11)
     ax2.grid(True, alpha=0.3)
+    ax2.set_xlim(0, 40)
+
     
     plt.suptitle(f'Figure 8: Static Equilibrium (θ₀=π/4, F=0) | Payload: {m_p} kg', 
                  fontsize=13, fontweight='bold')
@@ -164,6 +167,8 @@ def plot_fdr_example1(m_p=0.0):
     ax1.plot(t, theta_deg, 'b-', linewidth=1.5)
     ax1.set_ylabel('θ (degrees)', fontsize=11)
     ax1.grid(True, alpha=0.3)
+    ax1.set_ylim(-5, 30)
+    ax1.set_xlim(0, 40)
     
     # خط مرجع مقاله (بدون بار)
     if m_p == 0.0:
@@ -174,6 +179,7 @@ def plot_fdr_example1(m_p=0.0):
     ax2.set_ylabel('φ (degrees)', fontsize=11)
     ax2.set_xlabel('Time (sec)', fontsize=11)
     ax2.grid(True, alpha=0.3)
+    ax2.set_xlim(0, 40)
     
     plt.suptitle(f'Figure 9: FDR Example 1 (F₁=5N) | Payload: {m_p} kg', 
                  fontsize=13, fontweight='bold')
@@ -339,7 +345,7 @@ def plot_pid_control(m_p=0.0):
     axes[0].axhline(y=15.53, color='r', linestyle='--', linewidth=1.5, label=r'Target $\theta_{ref} = 15.53^\circ$')
     axes[0].set_title(r"Dynamic response for the bending angle $\theta$", fontweight='bold')
     axes[0].set_ylabel(r"Angle $(^\circ)$")
-    axes[0].set_ylim([0, 18]) 
+    axes[0].set_ylim([0, 30]) 
     axes[0].set_xlim([0, 5])
     axes[0].grid(True, linestyle=':', alpha=0.7)
     axes[0].legend(loc='lower right')
@@ -360,7 +366,7 @@ def plot_pid_control(m_p=0.0):
     axes[2].set_title(r"Temporal evolution of the actuation force $F_1$", fontweight='bold')
     axes[2].set_xlabel(r"Time (s)")
     axes[2].set_ylabel(r"Force (N)")
-    axes[2].set_ylim([0, 8]) 
+    axes[2].set_ylim([3.5, 6]) 
     axes[2].set_xlim([0, 5])
     axes[2].grid(True, linestyle=':', alpha=0.7)
     axes[2].legend(loc='upper right')

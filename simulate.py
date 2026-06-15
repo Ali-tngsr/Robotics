@@ -160,7 +160,7 @@ def simulate_pid_control(setpoint=15.53, t_final=5.0, dt=0.01, m_p=0.0):
 # ─────────────────────────────────────────────────────────────────────────────
 def simulate_smc_control(setpoint=15.53, t_final=5.0, dt=0.01, m_p=0.0):
     setpoint_rad = setpoint * np.pi / 180.0
-    smc = SMCController(lambda_c=8.0, K_s=15.0, epsilon=0.05)
+    smc = SMCController(lambda_c=5.0, K_s=4.0, epsilon=0.2)
     
     t = np.arange(0, t_final, dt)
     state = np.array([1e-8, 0.0, 0.0, 0.0])  # [θ, φ, θ̇, φ̇]
