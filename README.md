@@ -119,15 +119,15 @@ $$T = T_{b,\text{Trans}} + T_{b,\text{Rot}} + T_{d,\text{Trans}} + T_{d,\text{Ro
 
 **انرژی جنبشی انتقالی ستون فقرات:**
 
-$$T_{b,\text{Trans}} = \frac{1}{2}\ell^2 m_b\!\left(\frac{1}{3}H_1\dot{\theta}^2 + \frac{1}{4}H_2\dot{\varphi}^2\right}$$
+$$T_{b,\text{Trans}} = \frac{1}{2}\ell^2 m_b\!\left(\frac{1}{3}H_1\dot{\theta}^2 + \frac{1}{4}H_2\dot{\varphi}^2\right)$$
 
 **انرژی جنبشی دورانی ستون فقرات:**
 
-$$T_{b,\text{Rot}} = \frac{1}{2}\ell I_b\!\left(H_3\dot{\theta}^2 + H_4\dot{\varphi}^2\right}$$
+$$T_{b,\text{Rot}} = \frac{1}{2}\ell I_b\!\left(H_3\dot{\theta}^2 + H_4\dot{\varphi}^2\right)$$
 
 **انرژی جنبشی دیسک‌ها:**
 
-$$T_d = \frac{1}{2}\ell^2 m_d\!\left(H_5\dot{\theta}^2 + H_6\dot{\varphi}^2\right) + \frac{1}{2}I_{xx}\!\left(H_7\dot{\theta}^2 + H_8\dot{\varphi}^2\right}$$
+$$T_d = \frac{1}{2}\ell^2 m_d\!\left(H_5\dot{\theta}^2 + H_6\dot{\varphi}^2\right) + \frac{1}{2}I_{xx}\!\left(H_7\dot{\theta}^2 + H_8\dot{\varphi}^2\right)$$
 
 #### انرژی پتانسیل
 
