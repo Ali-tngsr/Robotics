@@ -119,15 +119,15 @@ $$T = T_{b,\text{Trans}} + T_{b,\text{Rot}} + T_{d,\text{Trans}} + T_{d,\text{Ro
 
 **انرژی جنبشی انتقالی ستون فقرات:**
 
-$$T_{b,\text{Trans}} = \frac{1}{2}\ell^2 m_b\!\left(\frac{1}{3}H_1\dot{\theta}^2 + \frac{1}{4}H_2\dot{\varphi}^2\right)$$
+$$T_{b,\text{Trans}} = \frac{1}{2}\ell^2 m_b\!\left(\frac{1}{3}H_1\dot{\theta}^2 + \frac{1}{4}H_2\dot{\varphi}^2\right}$$
 
 **انرژی جنبشی دورانی ستون فقرات:**
 
-$$T_{b,\text{Rot}} = \frac{1}{2}\ell I_b\!\left(H_3\dot{\theta}^2 + H_4\dot{\varphi}^2\right)$$
+$$T_{b,\text{Rot}} = \frac{1}{2}\ell I_b\!\left(H_3\dot{\theta}^2 + H_4\dot{\varphi}^2\right}$$
 
 **انرژی جنبشی دیسک‌ها:**
 
-$$T_d = \frac{1}{2}\ell^2 m_d\!\left(H_5\dot{\theta}^2 + H_6\dot{\varphi}^2\right) + \frac{1}{2}I_{xx}\!\left(H_7\dot{\theta}^2 + H_8\dot{\varphi}^2\right)$$
+$$T_d = \frac{1}{2}\ell^2 m_d\!\left(H_5\dot{\theta}^2 + H_6\dot{\varphi}^2\right) + \frac{1}{2}I_{xx}\!\left(H_7\dot{\theta}^2 + H_8\dot{\varphi}^2\right}$$
 
 #### انرژی پتانسیل
 
@@ -169,11 +169,11 @@ $$\mathbf{r}_e = \left[\frac{\ell}{\theta}\bigl(1-\cos\theta\bigr)\cos\varphi,\q
 
 مختصات دکارتی:
 
-$$x_e = \frac{\ell(1-\cos\theta)}{\theta}\cos\varphi \tag{7)$$
+$$x_e = \frac{\ell(1-\cos\theta)}{\theta}\cos\varphi \tag{7}$$
 
-$$y_e = \frac{\ell(1-\cos\theta)}{\theta}\sin\varphi \tag{8)$$
+$$y_e = \frac{\ell(1-\cos\theta)}{\theta}\sin\varphi \tag{8}$$
 
-$$z_e = \frac{\ell\sin\theta}{\theta} \tag{9)$$
+$$z_e = \frac{\ell\sin\theta}{\theta} \tag{9}$$
 
 ### ۴.۲ انرژی جنبشی بار
 
@@ -183,15 +183,15 @@ $$\mathbf{v}_p = \begin{bmatrix}\frac{\partial x_e}{\partial \theta}\dot{\theta}
 
 انرژی جنبشی:
 
-$$T_p = \frac{1}{2}m_p\,\mathbf{v}_p^T\mathbf{v}_p = \frac{1}{2}m_p\left[H_9\dot{\theta}^2 + H_{10}\dot{\varphi}^2 + H_{11}\dot{\theta}\dot{\varphi}\right] \tag{10)$$
+$$T_p = \frac{1}{2}m_p\,\mathbf{v}_p^T\mathbf{v}_p = \frac{1}{2}m_p\left[H_9\dot{\theta}^2 + H_{10}\dot{\varphi}^2 + H_{11}\dot{\theta}\dot{\varphi}\right] \tag{10}$$
 
 ### ۴.۳ ماتریس اینرسی جدید
 
-$$M_{11}^{\text{new}} = M_{11}^{\text{base}} + m_p H_9 \tag{11)$$
+$$M_{11}^{\text{new}} = M_{11}^{\text{base}} + m_p H_9 \tag{11}$$
 
-$$M_{22}^{\text{new}} = M_{22}^{\text{base}} + m_p H_{10} \tag{12)$$
+$$M_{22}^{\text{new}} = M_{22}^{\text{base}} + m_p H_{10} \tag{12}$$
 
-$$M_{12}^{\text{new}} = m_p H_{11} \quad \text{(غیرصفر!)} \tag{13)$$
+$$M_{12}^{\text{new}} = m_p H_{11} \quad \text{(غیرصفر!)} \tag{13}$$
 
 **نکته کلیدی:** در غیاب بار، $M_{12}^{\text{base}} = 0$. با بار، ماتریس دیگر **قطری نیست**!
 
@@ -203,11 +203,11 @@ $$U_p = m_p g z_e = m_p g\frac{\ell\sin\theta}{\theta}$$
 
 بردار گرانش:
 
-$$\mathbf{G}_p = -\frac{\partial U_p}{\partial \mathbf{q}} = \begin{bmatrix} -m_p g \ell\frac{\partial}{\partial\theta}\left(\frac{\sin\theta}{\theta}\right) \\ 0 \end{bmatrix} \tag{14)$$
+$$\mathbf{G}_p = -\frac{\partial U_p}{\partial \mathbf{q}} = \begin{bmatrix} -m_p g \ell\frac{\partial}{\partial\theta}\left(\frac{\sin\theta}{\theta}\right) \\ 0 \end{bmatrix} \tag{14}$$
 
 ### ۴.۵ معادلات حرکت نهایی
 
-$$\mathbf{M}_{\text{new}}(\theta)\ddot{\mathbf{q}} + \mathbf{C}_{\text{new}}(\theta,\dot{\mathbf{q}})\dot{\mathbf{q}} + \mathbf{K}\mathbf{q} + \mathbf{G}_p(\theta) = \mathbf{D}(\theta,\varphi)\mathbf{F} \tag{15)$$
+$$\mathbf{M}_{\text{new}}(\theta)\ddot{\mathbf{q}} + \mathbf{C}_{\text{new}}(\theta,\dot{\mathbf{q}})\dot{\mathbf{q}} + \mathbf{K}\mathbf{q} + \mathbf{G}_p(\theta) = \mathbf{D}(\theta,\varphi)\mathbf{F} \tag{15}$$
 
 ---
 
@@ -223,11 +223,11 @@ $$\mathbf{M}_{\text{new}}(\theta)\ddot{\mathbf{q}} + \mathbf{C}_{\text{new}}(\th
 
 **خطای ردیابی:**
 
-$$\mathbf{e}(t) = \mathbf{q}(t) - \mathbf{q}_d(t) \tag{16)$$
+$$\mathbf{e}(t) = \mathbf{q}(t) - \mathbf{q}_d(t) \tag{16}$$
 
 **سطح لغزش:**
 
-$$\mathbf{s}(t) = \dot{\mathbf{e}}(t) + \boldsymbol{\Lambda}\mathbf{e}(t) = \dot{\mathbf{q}} - \dot{\mathbf{q}}_d + \boldsymbol{\Lambda}\mathbf{e} \tag{17)$$
+$$\mathbf{s}(t) = \dot{\mathbf{e}}(t) + \boldsymbol{\Lambda}\mathbf{e}(t) = \dot{\mathbf{q}} - \dot{\mathbf{q}}_d + \boldsymbol{\Lambda}\mathbf{e} \tag{17}$$
 
 که $\boldsymbol{\Lambda} = \text{diag}(\lambda_1, \lambda_2) > 0$ ماتریس قطری معکوس است.
 
@@ -241,15 +241,15 @@ $$\dot{\mathbf{e}} = -\boldsymbol{\Lambda}\mathbf{e} \quad \Rightarrow \quad \ma
 
 1. **کنترل معادل (Equivalent Control):**
 
-$$\mathbf{F}_{\text{eq}} = \mathbf{D}^{-1}\left[\mathbf{M}_{\text{new}}(\ddot{\mathbf{q}}_d - \boldsymbol{\Lambda}\dot{\mathbf{e}}) + \mathbf{C}_{\text{new}}\boldsymbol{\nu} + \mathbf{K}\mathbf{q} + \mathbf{G}_p\right] \tag{18)$$
+$$\mathbf{F}_{\text{eq}} = \mathbf{D}^{-1}\left[\mathbf{M}_{\text{new}}(\ddot{\mathbf{q}}_d - \boldsymbol{\Lambda}\dot{\mathbf{e}}) + \mathbf{C}_{\text{new}}\boldsymbol{\nu} + \mathbf{K}\mathbf{q} + \mathbf{G}_p\right] \tag{18}$$
 
 2. **کنترل جابجایی (Switching Control):**
 
-$$\mathbf{F}_{\text{sw}} = -\mathbf{D}^{-1}\mathbf{M}_{\text{new}}\mathbf{K}_s\text{sat}(\mathbf{s}/\epsilon) \tag{19)$$
+$$\mathbf{F}_{\text{sw}} = -\mathbf{D}^{-1}\mathbf{M}_{\text{new}}\mathbf{K}_s\text{sat}(\mathbf{s}/\epsilon) \tag{19}$$
 
 **کنترل کل:**
 
-$$\mathbf{F} = \mathbf{F}_{\text{eq}} + \mathbf{F}_{\text{sw}} \tag{20)$$
+$$\mathbf{F} = \mathbf{F}_{\text{eq}} + \mathbf{F}_{\text{sw}} \tag{20}$$
 
 ### ۵.۴ انتخاب پارامترها
 
@@ -263,7 +263,7 @@ $$\mathbf{F} = \mathbf{F}_{\text{eq}} + \mathbf{F}_{\text{sw}} \tag{20)$$
 
 **تابع Lyapunov:**
 
-$$V = \frac{1}{2}\mathbf{s}^T\mathbf{M}_{\text{new}}\mathbf{s} \tag{21)$$
+$$V = \frac{1}{2}\mathbf{s}^T\mathbf{M}_{\text{new}}\mathbf{s} \tag{21}$$
 
 **مشتق زمانی:**
 
@@ -275,7 +275,7 @@ $$\dot{V} \leq -\sum_{i=1}^{2} k_i|s_i| + \frac{1}{2}\mathbf{s}^T\dot{\mathbf{M}
 
 اگر $k_i > \sup_t\|\dot{\mathbf{M}}_{ii}\|/2$:
 
-$$\dot{V} < 0 \quad \text{خارج از لایه مرزی} \tag{22)$$
+$$\dot{V} < 0 \quad \text{خارج از لایه مرزی} \tag{22}$$
 
 **نتیجه:** سطح لغزش $\mathbf{s} = \mathbf{0}$ **پایدار مجانبی** است. ✓
 
